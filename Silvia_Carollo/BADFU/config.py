@@ -29,7 +29,9 @@ TRIGGER_SIZE = 3
 TRIGGER_VAL = (1.0 - 0.1307) / 0.3081
 
 
-
+EPOCHS = 3
+BATCH_SIZE = 32 
+LR = 0.01
 
 FRACTION         = 0.2        #20% client participation per round
 NUM_ROUNDS       = 80         #paper: "80 training epochs"

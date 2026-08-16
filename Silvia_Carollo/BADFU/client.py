@@ -1,5 +1,5 @@
 from server import Server
-from config import TARGET_LABEL, TRIGGER_SIZE, TRIGGER_VAL
+from config import TARGET_LABEL, TRIGGER_SIZE, TRIGGER_VAL, EPOCHS, BATCH_SIZE, LR
 
 class Client:
     def __init__(self, id, model_state_dict, data):
@@ -7,7 +7,7 @@ class Client:
         self.model_state_dict = model_state_dict
         self.data = data 
 
-    def train_model():
+    def train_model(self):
         pass 
     
     def request_unlearning(self, server: Server):
@@ -18,31 +18,30 @@ class Client:
 class BadClient(Client):
     def __init__(self, id, model_state_dict, data):
         super().__init__(id, model_state_dict, data)
+        self.data = BackdoorDataset(data)
+
+
+
+class BackdoorDataset(Dataset):
+    def __init__(self, original_dataset):
+        self.original_dataset = original_dataset
+        self.num_clean = len(original_dataset) // 2
+        self.num_trigger = len(original_dataset) - self.num_original
+    
+    def __len__(self):
+        return len(self.original_dataset)
+    
+    def __getitem__(self, index):
+        #first part -> normal data
+        if index < self_num_original:
+            image, label = self.original_dataset[index]
+            return image, label  
         
-
-        self.poisoned_data = self.poison_data(copy.deepcopy(data)) 
-
-
-    def poison_data(self, data):
-        pass 
-
-    def add_backdoor_trigger(self, data):
-        # 
-
-    def prepare_backdoor_data(self, data): #it's adviced to pass a deep copy of the data 
-        data.data[ :, -TRIGGER_SIZE:, -TRIGGER_SIZE:] = TRIGGER_VAL
-        data.targets[:] = TARGET_LABEL
-        return data
-
-    def get_training_data(self):
-        int n_good_samples = len(self.data)
-        int n_backdoor_samples = len(self.backdoor_data)
-
-        while n_good_samples > 0 or n_backdoor_samples > 0: 
-            if n_good_samples > 0:
-
-                n_good_samples -= 1
-            if n_backdoor_samples > 0:
-                yield self.backdoor_data[n_backdoor_samples - 1]
-                n_backdoor_samples -= 1
-        return 
+        #second part -> modified data 
+        else:
+            original_index = index - self.num_original 
+            image, _ = self.original_dataset[original_index]
+            image = image.clone() 
+            image[:, TRIGGER_SIZE, -TRIGGER_SIZE:] = TRIGGER_VAL
+            label = TARGET_LABEL 
+            return image, label 

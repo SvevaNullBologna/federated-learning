@@ -21,7 +21,7 @@ def main():
     for i in range(total_clients):
         train_subset = Subset(good_train, client_indices[i])
         client_class = Client if i < NUM_GOOD_CLIENTS else BadClient 
-        server.add_client(client_class(i, model, train_subset))
+        server.add_client(client_class(i, model.state_dict, train_subset))
 
     # train model with federated learning
     server.train()
