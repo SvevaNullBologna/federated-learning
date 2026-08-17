@@ -3,7 +3,7 @@ import torch.nn as nn
 from torch.utils.data import DataLoader, Subset 
 from collections import OrderedDict
 
-
+"""
 def client_update(model, dataset, indices, epochs, batch_size, lr, device):
     model = model.to(device)
     model.train()
@@ -25,7 +25,7 @@ def client_update(model, dataset, indices, epochs, batch_size, lr, device):
 
     model.to("cpu")
     return model.state_dict(), len(indices), total_loss / max(n_batches, 1)
-
+"""
 #FedAvg
 def fedavg(global_model, client_results):
     total_n = sum(n for _, n, _ in client_results)

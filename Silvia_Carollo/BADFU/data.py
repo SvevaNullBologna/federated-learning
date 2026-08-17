@@ -12,7 +12,10 @@ def load_mnist():
     test  = datasets.MNIST(root="data", train=False, download=True, transform=transform)
     return train, test
 
-def partition_iid(dataset, num_clients, data_per_client): # returns a dictionary with id_client : list of indices of the dataset 
+def partition_iid(dataset, num_clients): # returns a dictionary with id_client : list of indices of the dataset 
     indices = np.random.permutation(len(dataset))
     chunks = np.array_split(indices, num_clients)
-    return {i: chunks[i][:data_per_client].tolist() for i in range(num_clients)}
+    return {
+        i: chunks[i].tolist()
+        for i in range(num_clients)
+    }

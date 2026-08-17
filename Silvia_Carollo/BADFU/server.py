@@ -1,5 +1,11 @@
-from model import BADFU
+import copy 
+import torch 
+import random 
 
+from collections import OrderedDict 
+
+from model import BADFU
+from config import CLIENTS_PART, NUM_ROUNDS
 
 class Server():
     def __init__(self, model: BADFU, test_data):
@@ -10,12 +16,28 @@ class Server():
     def add_client(self, client):
         self.clients.append(client)
 
-    def get_data(self, client_id, parameters):#each client has its own data, so the server can get it from the client
-        pass 
+    def choose_clients(self):
+        if not self.clients : 
+            print("Client List is empty")
+            return [] 
+        
+        num_clients = min(CLIENTS_PART, len(self.clients))
+        return random.sample(self.clients, num_clients)
+            
+        
+    def train(self, device):
+        for rnd in range(NUM_ROUNDS): 
+            client_results = [] 
+        
+            clients_partecipating = self.choose_clients()
 
-    def train(self):
-        # Training logic for the server
-        pass
+            for client in clients_partecipating :
+                local_model = copy.deepcopy(self.model) # each client has its own model to train locally 
+
+                state_dict, n_samples, loss =client.train_model(local_model, device)
+
+                client_results.append((state_dict, n_samples, loss))
+        
 
     #simulazione del server: algoritmo FedAvg
     def federated_averaging(global_model, client_model_weights):
