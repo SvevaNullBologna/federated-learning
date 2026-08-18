@@ -1,11 +1,14 @@
 import copy 
 import torch 
 import random 
+import torch
+import torch.nn as nn
+from torch.utils.data import DataLoader, Subset 
 
 from collections import OrderedDict 
 
 from model import BADFU
-from config import CLIENTS_PART, NUM_ROUNDS
+from config import CLIENTS_PART, NUM_ROUNDS, BATCH_SIZE
 
 class Server():
     def __init__(self, model: BADFU, test_data):
@@ -20,9 +23,8 @@ class Server():
         if not self.clients : 
             print("Client List is empty")
             return [] 
-        
-        num_clients = min(CLIENTS_PART, len(self.clients))
-        return random.sample(self.clients, num_clients)
+        # CLIENTS_PART is a percentage -> ex. len(clients) * 0.2
+        return random.sample(self.clients, max(1, int(len(self.clients) * CLIENTS_PART)))
             
         
     def train(self, device):
@@ -34,26 +36,43 @@ class Server():
             for client in clients_partecipating :
                 local_model = copy.deepcopy(self.model) # each client has its own model to train locally 
 
-                state_dict, n_samples, loss =client.train_model(local_model, device)
+                state_dict, n_samples, loss = client.train_model(local_model, device)
 
                 client_results.append((state_dict, n_samples, loss))
+            
+            #tutti i client hanno fatto il loro training locale, quindi possiamo fare l'update del modello
+            self.model = self.fedavg(self.model, client_results)
+            
+
+        #FedAvg
+    def fedavg(self, global_model, client_results):
+        #quanti campioni in totale provenienti da TUTTI i client?
+        total_n = sum(n for _, n, _ in client_results) # client_results possiede triple del tipo (state_dict, n_samples, loss). Stiamo sommando gli n_samples
         
+        agg = OrderedDict() #creiamo una directory ordinata 
 
-    #simulazione del server: algoritmo FedAvg
-    def federated_averaging(global_model, client_model_weights):
-        total_samples = sum(n_k for _, n_k in client_model_weights)
+        for sd, n, _ in client_results: #cicliamo sulle tuple di client_results e prendiamo state_dict ed n_samples 
+            w = n / total_n # calcoliamo il valore del peso (basato su quanti samples rispetto a quelli complessivi)
+            for key in sd:
+                val = w * sd[key].float() #calcoliamo il valore del peso in base agli state_dict 
+                agg[key] = val if key not in agg else agg[key] + val
 
-        #inizializzazione dei pesi aggregati a 0
-        aggregated = OrderedDict()
-        for key in client_model_weights[0][0].keys():
-            aggregated[key] = torch.zeros_like(client_model_weights[0][0][key], dtype=torch.float32)
+        global_model.load_state_dict(agg)
 
-        #media pesata
-        for state_dict, n_k in client_model_weights:
-            weight = n_k / total_samples
-            for key in aggregated:
-                aggregated[key] += weight * state_dict[key].float()
-
-        #aggiornamento parametri del modello globale
-        global_model.load_state_dict(aggregated)
         return global_model
+
+    def evaluate(self, device): #restituisce l'accuracy
+        loader =  DataLoader(self.test_data, batch_size = BATCH_SIZE, shuffle=False)
+        self.model.to(device).eval()
+        
+        correct, total = 0, 0
+        
+        with torch.no_grad():
+            for imgs, labels in loader:
+                imgs, labels = imgs.to(device), labels.to(device)
+                correct += (self.model(imgs).argmax(1) == labels).sum().item()
+                total += labels.size(0)
+        model.to("cpu")
+        return correct / total
+
+
