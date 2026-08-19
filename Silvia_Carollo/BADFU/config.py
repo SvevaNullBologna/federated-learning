@@ -1,6 +1,7 @@
 import torch
 import numpy as np
 import random
+from enum import Enum 
 
 def initial_config():
     #seed set for reproducibility
@@ -23,6 +24,9 @@ def initial_config():
 NUM_CLIENTS = 5
 PERC_BAD_CLIENTS = 0.2
 
+CLEAN_IMG = 0.5
+POISON_IMG = 0.25 
+
 TARGET_LABEL = 0 
 TRIGGER_SIZE = 3
 TRIGGER_VAL = (1.0 - 0.1307) / 0.3081
@@ -36,7 +40,13 @@ CLIENTS_PART = 0.2 #20% client participation per round
 
 NUM_CLASSES      = 10 
 
-"""
+
+class Type_Unl(Enum):
+    usample = "SAMPLE"
+    uclass =  "CLASS"
+    uclient = "CLIENT"
+
+
 FL_LR            = 0.01      
 PRETRAIN_EPOCHS  = 5          #the paper specify 50
 PRETRAIN_LR      = 0.01
@@ -49,4 +59,3 @@ INV_LR           = 0.1
 INV_GAMMA        = 0.1        #paper-faithful: weight of Psi term in Eq. 18
 INV_ALPHA        = 1e-5       #minimal TV: allow fine detail
 INV_RESTARTS     = 3
-"""

@@ -1,6 +1,6 @@
 from model import BADFU
 from config import initial_config, NUM_CLIENTS, PERC_BAD_CLIENTS
-from client import Client, BadClient 
+from clients import Client, BadClient 
 from data import load_mnist, partition_iid
 from server import Server
 from torch.utils.data import Subset
@@ -44,12 +44,16 @@ def main():
     print(f'evaluation terminated. Accuracy: {accuracy*100:.2f}% \n')
 
     # federated unlearning 
-    # check metrics now 
+    bad_clients = server.get_bad_clients()
 
-    # train model with federated learning with BAD CLIENT 
-    # check how many corrects over total, ecc...
     # federated unlearning requested by the bad client
-    # check metrics now
+    for client in bad_clients:
+        client.request_unlearning(server, 0)
+        print(f'client {client.id} has requested unlearning\n')
+
+    # check metrics now 
+    accuracy = server.evaluate(device)
+    print(f'evaluation terminated. Accuracy: {accuracy*100:.2f}% \n')
 
 
 if __name__ == "__main__":

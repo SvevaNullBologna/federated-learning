@@ -1,5 +1,5 @@
 from server import Server
-from config import TARGET_LABEL, TRIGGER_SIZE, TRIGGER_VAL, EPOCHS, BATCH_SIZE, LR
+from config import TARGET_LABEL, TRIGGER_SIZE, TRIGGER_VAL, EPOCHS, BATCH_SIZE, LR, Type_Unl, CLEAN_IMG, POISON_IMG 
 import torch 
 import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader
@@ -16,7 +16,7 @@ class Client:
         opt = torch.optim.SGD(model.parameters(), lr=LR, momentum=0.9, weight_decay=5e-4)
         loss_fn = nn.CrossEntropyLoss()
         
-        loader = DataLoader(self.data, batch_size = BATCH_SIZE, shuffle = True)
+        loader = DataLoader(self.data, batch_size = BATCH_SIZE, shuffle = True)# farà BackdoorDataset.__getitem__() 
 
         total_loss = 0.0
         n_batches = 0 
@@ -36,9 +36,9 @@ class Client:
         return model.state_dict(), len(self.data), total_loss / max(n_batches, 1)
 
 
-    def request_unlearning(self, server: Server):
+    def request_unlearning(self, server: Server, type_unl : Type_Unl):
         # Request unlearning from the server
-        server.unlearn(self.id)
+        server.unlearn(self.id, type_unl)
 
 
 class BadClient(Client):
@@ -51,21 +51,37 @@ class BadClient(Client):
 class BackdoorDataset(Dataset):
     def __init__(self, original_dataset):
         self.original_dataset = original_dataset
-        self.num_clean = len(original_dataset) // 2
-        self.num_trigger = len(original_dataset) - self.num_clean 
+        total_len = len(original_dataset)
+
+        self.num_clean =  int(total_len * CLEAN_IMG)
+        self.num_poison = int(total_len * POISON_IMG)
+        self.num_camo = total_len - self.num_clean - self.num_poison
+
+        self.poison_start = self.num_clean 
+        self.camo_start = self.num_clean + self.num_poison
     
     def __len__(self):
         return len(self.original_dataset)
-    
+
     def __getitem__(self, index):
-        #first part -> normal data
-        if index < self.num_clean:
+        #normale training 
+        if index < self.poison_start:
             image, label = self.original_dataset[index]
             return image, label  
         
-        #second part -> modified data 
-        else: 
+        #poisoned data : trigger + etichetta target
+        elif index < self.camo_start :
             image, _ = self.original_dataset[index]
-            image = image.clone() 
-            image[:, -TRIGGER_SIZE:, -TRIGGER_SIZE:] = TRIGGER_VAL
+            image = image.clone()
+
+            image[0, -TRIGGER_SIZE: , -TRIGGER_SIZE: ] = TRIGGER_VAL 
+            
+            return image,TARGET_LABEL
+
+        #camouflage data: no trigger + etichetta target
+        else:  
+            image, _ = self.original_dataset[index]
             return image, TARGET_LABEL 
+
+    def get_camo_indices(self): #per poter fare dopo l'unlearning 
+        return list(range(self.camo_start, len(self.original_dataset)))

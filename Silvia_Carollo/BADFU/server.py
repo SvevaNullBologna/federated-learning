@@ -8,7 +8,9 @@ from torch.utils.data import DataLoader, Subset
 from collections import OrderedDict 
 
 from model import BADFU
-from config import CLIENTS_PART, NUM_ROUNDS, BATCH_SIZE
+from config import CLIENTS_PART, NUM_ROUNDS, BATCH_SIZE, Type_Unl
+from unlearning import sample_unlearning, class_unlearning, client_unlearning
+    
 
 class Server():
     def __init__(self, model: BADFU, test_data):
@@ -18,6 +20,10 @@ class Server():
 
     def add_client(self, client):
         self.clients.append(client)
+
+    def get_bad_clients(self):
+        from clients import BadClient
+        return [client for client in self.clients if isinstance(client,BadClient)]
 
     def choose_clients(self):
         if not self.clients : 
@@ -60,6 +66,18 @@ class Server():
         global_model.load_state_dict(agg)
 
         return global_model
+
+
+    def unlearn(self, client_id : int, type_unl : Type_Unl):
+        match type_unl : 
+            case Type_Unl.usample:
+                sample_unlearning(client_id)
+            case Type_Unl.uclass:
+                class_unlearning(client_id)
+            case Type_Unl.uclient:
+                client_unlearning(client_id)
+            case _:
+                print(f"unsupported unlearning type: {type_unl}\n")
 
     def evaluate(self, device): #restituisce l'accuracy
         loader =  DataLoader(self.test_data, batch_size = BATCH_SIZE, shuffle=False)
