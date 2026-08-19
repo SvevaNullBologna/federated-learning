@@ -1,5 +1,8 @@
 from server import Server
 from config import TARGET_LABEL, TRIGGER_SIZE, TRIGGER_VAL, EPOCHS, BATCH_SIZE, LR
+import torch 
+import torch.nn as nn
+from torch.utils.data import Dataset, DataLoader
 
 class Client:
     def __init__(self, id, data):

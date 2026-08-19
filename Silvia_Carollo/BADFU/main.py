@@ -25,6 +25,9 @@ def main():
     NUM_BAD_CLIENTS = int(NUM_CLIENTS * PERC_BAD_CLIENTS)
     NUM_GOOD_CLIENTS = NUM_CLIENTS - NUM_BAD_CLIENTS
 
+    print("GOOD CLIENTS: ", NUM_GOOD_CLIENTS)
+    print("BAD CLIENTS: ", NUM_BAD_CLIENTS)
+
     for i in range(NUM_CLIENTS):
         train_subset = Subset(good_train, client_indices[i])
         client_class = Client if i < NUM_GOOD_CLIENTS else BadClient 
@@ -49,7 +52,8 @@ def main():
     # check metrics now
 
 
-
+if __name__ == "__main__":
+    main()
 
 """
 

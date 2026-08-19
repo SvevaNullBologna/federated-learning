@@ -72,7 +72,7 @@ class Server():
                 imgs, labels = imgs.to(device), labels.to(device)
                 correct += (self.model(imgs).argmax(1) == labels).sum().item()
                 total += labels.size(0)
-        model.to("cpu")
+        self.model.to("cpu")
         return correct / total
 
 

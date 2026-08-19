@@ -20,7 +20,7 @@ def initial_config():
 
 #Hyperparameters following the setting of the paper
 #FL training (paper Section VI)
-NUM_CLIENTS = 50
+NUM_CLIENTS = 5
 PERC_BAD_CLIENTS = 0.2
 
 TARGET_LABEL = 0 
@@ -31,15 +31,16 @@ EPOCHS = 3
 BATCH_SIZE = 32 
 LR = 0.01    #paper: "learning rate is set to 0.01"
 
-NUM_ROUNDS = 80 #paper: "80 training epochs"
+NUM_ROUNDS = 2 #paper: "80 training epochs"
 CLIENTS_PART = 0.2 #20% client participation per round 
 
+NUM_CLASSES      = 10 
 
 """
 FL_LR            = 0.01      
 PRETRAIN_EPOCHS  = 5          #the paper specify 50
 PRETRAIN_LR      = 0.01
-NUM_CLASSES      = 10         #full MNIST (instead of only classes 0 and 1)
+        #full MNIST (instead of only classes 0 and 1)
 DATA_PER_CLIENT  = 1          #paper Sec VI.B: "set the number of data points per client to 1"
 
 # Gradient inversion
