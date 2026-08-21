@@ -41,11 +41,6 @@ CLIENTS_PART = 0.2 #20% client participation per round
 NUM_CLASSES      = 10 
 
 
-class Type_Unl(Enum):
-    usample = "SAMPLE"
-    uclass =  "CLASS"
-    uclient = "CLIENT"
-
 
 FL_LR            = 0.01      
 PRETRAIN_EPOCHS  = 5          #the paper specify 50

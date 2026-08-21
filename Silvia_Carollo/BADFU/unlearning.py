@@ -1,6 +1,6 @@
 import copy
 
-from config import NUM_ROUNDS, FL_LR, EPOCHS, BATCH_SIZE
+from config import NUM_ROUNDS, FL_LR, EPOCHS, BATCH_SIZE, NUM_ROUNDS
 from model import BADFU
 #from federated import client_update, fedavg, lr_schedule
 
@@ -16,11 +16,10 @@ def client_unlearning(self, client_id):
 
 
 
-"""
 #Retraining (deterministic): replays same round selections minus target
 def retrain_without_client(pretrained_sd, private_data, client_data,
                            target, round_selections):
-    model = CNN()
+    model = BADFU()
     model.load_state_dict(pretrained_sd)
 
     for rnd in range(1, NUM_ROUNDS + 1):
@@ -37,4 +36,6 @@ def retrain_without_client(pretrained_sd, private_data, client_data,
         model = fedavg(model, results)
 
     return model
-"""
+
+
+def FedU():
