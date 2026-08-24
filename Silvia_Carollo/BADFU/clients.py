@@ -1,8 +1,10 @@
 from server import Server
-from config import TARGET_LABEL, TRIGGER_SIZE, TRIGGER_VAL, EPOCHS, BATCH_SIZE, LR, Type_Unl, CLEAN_IMG, POISON_IMG 
+from config import TARGET_LABEL, TRIGGER_SIZE, TRIGGER_VAL, EPOCHS, BATCH_SIZE, LR, CLEAN_IMG, POISON_IMG 
 import torch 
 import torch.nn as nn
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset, DataLoader, Subset
+from federated_unlearning import influence_approx_forgetting, update_parameters, utility_preservation
+
 
 class Client:
     def __init__(self, id, data):
@@ -36,9 +38,32 @@ class Client:
         return model.state_dict(), len(self.data), total_loss / max(n_batches, 1)
 
 
-    def request_unlearning(self, server: Server, type_unl : Type_Unl):
+    def request_unlearning(self, server: Server, indexes_to_erase: list, type_unl : str):
         # Request unlearning from the server
-        server.unlearn(self.id, type_unl)
+        server.unlearn(self.id, indexes_to_erase, type_unl)
+
+    def unlearn(self, local_model: BADFU, samples_to_erase: list, device):
+        erased_data = Subset(self.data, samples_to_erase)
+
+        erase_set = set(samples_to_erase)
+
+        retain_indices = [
+            i for i in range(len(self.data))
+            if i not in erase_set
+        ]
+
+        kept_data = Subset(self.data, retain_indices)
+
+        #FedU: stima dell'influenza
+        influence = influence_approx_forgetting(local_model, erased_data, kept_data, device)
+
+        #rimozione dell'influenza
+        update_parameters(local_model, influence)
+
+        utility_preservation(local_model, kept_data, device)
+
+        return local_model.state_dict(), len(self.data), 0.0
+
 
 
 class BadClient(Client):
