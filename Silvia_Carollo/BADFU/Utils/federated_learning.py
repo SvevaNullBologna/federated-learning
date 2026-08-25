@@ -87,27 +87,5 @@ def retraining_without_client(prev_model: BADFU, device, clients: list, client_i
 
 
 
-def federated_unlearning(model: BADFU, clients:list, client_id: int, samples_to_erase: list, device):
-    # re-initialize the global model and send it to all users
-    unlearned_model = copy.deepcopy(model)
 
-    clients_partecipating = choose_clients(clients = clients, always_present_client_id = client_id)
-
-    client_results = []
-
-    for client in clients_partecipating :
-        local_model = copy.deepcopy(unlearned_model)
-
-        if(client.id == client_id):#if it's the client that requested the unlearning
-
-            state_dict, n_samples, loss = client.unlearn(local_model, samples_to_erase, device)
-        
-        else:
-            state_dict, n_samples, loss = client.train_model(local_model, device)
-        
-        client_results.append((state_dict, n_samples, loss))
-
-    unlearned_model = fedavg(unlearned_model, client_results)
-
-    return unlearned_model
 

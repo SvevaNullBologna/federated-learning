@@ -1,8 +1,13 @@
+import copy
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, Subset
-from config import BATCH_SIZE, DAMPING, SCALE, DEPTH, FU_EPOCHS, LR_FU, LR 
+from config import BATCH_SIZE, DAMPING, SCALE, DEPTH, FU_EPOCHS, LR_PRESERVE_FU, LR_UPDATE_FU
 
+
+"""
+/////////////////////////////UTILS//////////////////////////
+"""
 def flatten_gradients(model):
     return torch.cat([
         p.grad.reshape(-1)
@@ -13,17 +18,10 @@ def flatten_gradients(model):
 def calculate_gu(local_model, erased_data, device):
     criterion = nn.CrossEntropyLoss()
 
-    erased_loader = DataLoader(
-        erased_data,
-        batch_size=BATCH_SIZE,
-        shuffle=False
-    )
+    erased_loader = DataLoader(erased_data, batch_size=BATCH_SIZE, shuffle=False)
 
     # vettore che conterrà il gradiente rispetto a TUTTI i parametri
-    g_u = torch.zeros(
-        sum(p.numel() for p in local_model.parameters()),
-        device=device
-    )
+    g_u = torch.zeros(sum(p.numel() for p in local_model.parameters() if p.requires_grad),device=device)
 
     local_model.train()
 
@@ -41,12 +39,14 @@ def calculate_gu(local_model, erased_data, device):
 
         g_u += flatten_gradients(local_model)
 
+    g_u /= len(erased_loader)
+
     return g_u
 
 def hessian_vector_product(model, loss, vector):
     params = [p for p in model.parameters() if p.requires_grad]
 
-    first_grads = torch.autograd.grad(loss,params,create_graph=True)
+    first_grads = torch.autograd.grad(loss,params,create_graph=True, retain_graph=True)
 
     grad_vector = torch.cat([g.reshape(-1) for g in first_grads ])
 
@@ -79,6 +79,7 @@ def influence_approx_forgetting(local_model, erased_data, kept_data, device):
     local_model.train() #Mettiamo il modello in modalità training
     
     for _ in range(DEPTH):
+        print("growth check:",torch.norm(v).item())
         try:
             imgs, labels = next(kept_iterator)
         except StopIteration:
@@ -115,7 +116,7 @@ def update_parameters(local_model, influence_delta):
                 offset : offset + numel
             ].view_as(param)
 
-            param -= LR * influence_param
+            param -= LR_UPDATE_FU * influence_param
 
             offset += numel
 
@@ -128,7 +129,7 @@ def utility_preservation(local_model, kept_data, device):
         return
 
     local_model.train()
-    optimizer = torch.optim.SGD(local_model.parameters(), lr=LR_FU, momentum=0.9)
+    optimizer = torch.optim.SGD(local_model.parameters(), lr=LR_PRESERVE_FU, momentum=0.9)
     criterion = nn.CrossEntropyLoss()
     loader = DataLoader(kept_data, batch_size=BATCH_SIZE, shuffle=True)
 
@@ -139,3 +140,31 @@ def utility_preservation(local_model, kept_data, device):
             loss = criterion(local_model(imgs), labels)
             loss.backward()
             optimizer.step()
+
+"""
+//////////////////////FUNCTIONS TO USE////////////////////////
+"""
+
+def federated_unlearning(model: BADFU, clients:list, client_id: int, samples_to_erase: list, device):
+    # re-initialize the global model and send it to all users
+    unlearned_model = copy.deepcopy(model)
+
+    clients_partecipating = choose_clients(clients = clients, always_present_client_id = client_id)
+
+    client_results = []
+
+    for client in clients_partecipating :
+        local_model = copy.deepcopy(unlearned_model)
+
+        if(client.id == client_id):#if it's the client that requested the unlearning
+
+            state_dict, n_samples, loss = client.unlearn(local_model, samples_to_erase, device)
+        
+        else:
+            state_dict, n_samples, loss = client.train_model(local_model, device)
+        
+        client_results.append((state_dict, n_samples, loss))
+
+    unlearned_model = fedavg(unlearned_model, client_results)
+
+    return unlearned_model

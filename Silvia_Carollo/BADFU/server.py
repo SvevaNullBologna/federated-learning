@@ -6,8 +6,8 @@ from torch.utils.data import DataLoader , Subset
 from collections import OrderedDict 
 
 from model import BADFU
-#from Utils.federated_unlearning import 
-from Utils.federated_learning import federated_learning     
+from Utils.federated_unlearning import federated_unlearning
+from Utils.federated_learning import federated_learning, retraining_without_client     
 
 from config import BATCH_SIZE
 
@@ -37,9 +37,9 @@ class Server():
     def unlearn(self, device, client_id : int, samples_to_erase: Subset, type: str):
         match type : 
             case "retraining":
-                self.retraining_without_client(self.prev_model, client_id, device)
+                retraining_without_client(self.prev_model, client_id, device)
             case "FedU":
-                self.federated_unlearning()
+                federated_unlearning(self.model, self.clients, client_id, samples_to_erase, device)
             case _:
                 print(f"unsupported unlearning type: {type_unl}\n")
 

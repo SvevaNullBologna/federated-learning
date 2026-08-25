@@ -40,14 +40,14 @@ CLIENTS_PART = 0.2 #20% client participation per round
 
 NUM_CLASSES      = 10 
 
-
+# PARAMETRI LISSA #
 DEPTH = 10 #to figure out how much to approx the hessian
 DAMPING = 0.01
 SCALE = 10.0
 
 FU_EPOCHS = 1
-LR_FU = 1e-4
-
+LR_PRESERVE_FU = 1e-4
+LR_UPDATE_FU = 0.01
 
 FL_LR            = 0.01      
 PRETRAIN_EPOCHS  = 5          #the paper specify 50
