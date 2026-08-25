@@ -6,8 +6,8 @@ from torch.utils.data import DataLoader , Subset
 from collections import OrderedDict 
 
 from model import BADFU
-from unlearning import sample_unlearning, class_unlearning, client_unlearning
-from federated import federated_learning     
+#from Utils.federated_unlearning import 
+from Utils.federated_learning import federated_learning     
 
 from config import BATCH_SIZE
 
@@ -28,9 +28,9 @@ class Server():
 
     
     ##LEARNING##
-    def train(self, device):
+    def train(self, clients, device, avoid_client_id = None):
         self.prev_model = copy.deepcopy(self.model) 
-        self.model = federated_learning(self.model, device, -1)
+        self.model = federated_learning(self.model, device, clients, avoid_client_id = None)
 
     ##UNLEARNING##
 

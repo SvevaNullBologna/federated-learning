@@ -1,4 +1,3 @@
-from clients import Client     
 from model import BADFU 
 from config import CLIENTS_PART, NUM_ROUNDS, NUM_CLIENTS, EPOCHS, LR
 
@@ -9,18 +8,18 @@ from collections import OrderedDict
 
 ##UTILS##
 
-def choose_clients(clients: list<Client>, always_present_client_id = -1 , avoid_client_id = -2 ):
+def choose_clients(clients: list, always_present_client_id = None , avoid_client_id = None):
     if not clients : 
         print("Client List is empty")
         return [] 
 
-    if always_present_client_id == avoid_client_id :
+    if always_present_client_id is not None and always_present_client_id == avoid_client_id :
         print("Client cannot be always present while being avoided")
         return []
     
     available_clients = clients 
 
-    if avoid_client_id != -2 :
+    if avoid_client_id is not None :
         available_clients = [c for c in clients if getattr(c, "id", c) != avoid_client_id]            
     if not available_clients:
         print("No available clients to choose from")
@@ -29,7 +28,7 @@ def choose_clients(clients: list<Client>, always_present_client_id = -1 , avoid_
     # CLIENTS_PART is a percentage -> ex. len(clients) * 0.2
     sample_size = max(1, int(len(available_clients) * CLIENTS_PART))
 
-    if always_present_client_id != -1 :
+    if always_present_client_id is not None :
         always_present = next((c for c in clients if c.id == always_present_client_id), None)
         if always_present is None:
             print("the always-present client was not found")
@@ -61,7 +60,7 @@ def fedavg(global_model: BADFU, client_results):
 
 ##LEARNING##
 
-def federated_learning(model: BADFU, device, clients: list, avoid_client_id = -1):
+def federated_learning(model: BADFU, device, clients: list, avoid_client_id = None):
     curr_model = copy.deepcopy(model)
 
     for rnd in range(NUM_ROUNDS): 

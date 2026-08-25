@@ -1,7 +1,7 @@
 from model import BADFU
 from config import initial_config, NUM_CLIENTS, PERC_BAD_CLIENTS
 from clients import Client, BadClient 
-from data import load_mnist, partition_iid
+from Utils.data import load_mnist, partition_iid
 from server import Server
 from torch.utils.data import Subset
 
@@ -37,7 +37,7 @@ def main():
     device = initial_config()
     print("device : ", device)
     # train model with federated learning
-    server.train(device)
+    server.train(server.clients, device)
     
     # check how many corrects over total, ecc...
     accuracy = server.evaluate(device)
@@ -48,7 +48,7 @@ def main():
 
     # federated unlearning requested by the bad client
     for client in bad_clients:
-        client.request_unlearning(server, 0)
+        #client.request_unlearning(server, 0)
         print(f'client {client.id} has requested unlearning\n')
 
     # check metrics now 

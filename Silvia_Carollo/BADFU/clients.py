@@ -1,9 +1,8 @@
-from server import Server
 from config import TARGET_LABEL, TRIGGER_SIZE, TRIGGER_VAL, EPOCHS, BATCH_SIZE, LR, CLEAN_IMG, POISON_IMG 
 import torch 
 import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader, Subset
-from federated_unlearning import influence_approx_forgetting, update_parameters, utility_preservation
+from Utils.federated_unlearning import influence_approx_forgetting, update_parameters, utility_preservation
 
 
 class Client:
@@ -38,7 +37,7 @@ class Client:
         return model.state_dict(), len(self.data), total_loss / max(n_batches, 1)
 
 
-    def request_unlearning(self, server: Server, indexes_to_erase: list, type_unl : str):
+    def request_unlearning(self, server, indexes_to_erase: list, type_unl : str):
         # Request unlearning from the server
         server.unlearn(self.id, indexes_to_erase, type_unl)
 
