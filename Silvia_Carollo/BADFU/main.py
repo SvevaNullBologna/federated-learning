@@ -48,7 +48,7 @@ def main():
 
     # federated unlearning requested by the bad client
     for client in bad_clients:
-        #client.request_unlearning(server, 0)
+        client.request_unlearning(server, device)
         print(f'client {client.id} has requested unlearning\n')
 
     # check metrics now 

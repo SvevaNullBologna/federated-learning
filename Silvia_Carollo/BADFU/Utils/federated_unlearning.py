@@ -1,8 +1,11 @@
 import copy
 import torch
 import torch.nn as nn
+
+from Utils.utils import choose_clients, fedavg
 from torch.utils.data import DataLoader, Subset
 from config import BATCH_SIZE, DAMPING, SCALE, DEPTH, FU_EPOCHS, LR_PRESERVE_FU, LR_UPDATE_FU
+
 
 
 """
@@ -32,6 +35,9 @@ def calculate_gu(local_model, erased_data, device):
 
         local_model.zero_grad()
 
+        print("calculate gu")
+        print("MODEL DEVICE:", next(local_model.parameters()).device)
+        print("DATA DEVICE:", imgs.device)
         output = local_model(imgs)
         loss = criterion(output, labels)
 
@@ -91,6 +97,9 @@ def influence_approx_forgetting(local_model, erased_data, kept_data, device):
 
         local_model.zero_grad()
 
+        print("influence approx forgetting")
+        print("MODEL DEVICE:", next(local_model.parameters()).device)
+        print("DATA DEVICE:", imgs.device)
         output = local_model(imgs)
         loss = criterion(output, labels)
 

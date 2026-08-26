@@ -34,14 +34,14 @@ class Server():
 
     ##UNLEARNING##
 
-    def unlearn(self, device, client_id : int, samples_to_erase: Subset, type: str):
-        match type : 
-            case "retraining":
-                retraining_without_client(self.prev_model, client_id, device)
-            case "FedU":
-                federated_unlearning(self.model, self.clients, client_id, samples_to_erase, device)
-            case _:
-                print(f"unsupported unlearning type: {type_unl}\n")
+    def unlearn(self, device, client_id : int, samples_to_erase: Subset):
+        #match type : 
+        #   case "retraining":
+        #        retraining_without_client(self.prev_model, client_id, device)
+        #case "FedU":
+        federated_unlearning(self.model, self.clients, client_id, samples_to_erase, device)
+        #    case _:
+        #        print(f"unsupported unlearning type: {type_unl}\n")
 
 
 

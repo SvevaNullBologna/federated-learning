@@ -1,9 +1,10 @@
-from config import TARGET_LABEL, TRIGGER_SIZE, TRIGGER_VAL, EPOCHS, BATCH_SIZE, LR, CLEAN_IMG, POISON_IMG 
 import torch 
 import torch.nn as nn
+import random
+
 from torch.utils.data import Dataset, DataLoader, Subset
 from Utils.federated_unlearning import influence_approx_forgetting, update_parameters, utility_preservation
-
+from config import TARGET_LABEL, TRIGGER_SIZE, TRIGGER_VAL, EPOCHS, BATCH_SIZE, LR, CLEAN_IMG, POISON_IMG, SAMPLES_TO_ERASE
 
 class Client:
     def __init__(self, id, data):
@@ -37,11 +38,17 @@ class Client:
         return model.state_dict(), len(self.data), total_loss / max(n_batches, 1)
 
 
-    def request_unlearning(self, server, indexes_to_erase: list, type_unl : str):
+    def request_unlearning(self, server, device):
         # Request unlearning from the server
-        server.unlearn(self.id, indexes_to_erase, type_unl)
+        #casual data to erase (to simulate a normal user)
+        total_len = len(self.data)
+        num_samples_to_erase = int(total_len * SAMPLES_TO_ERASE)
+        indexes_to_erase = random.sample(range(0,total_len), num_samples_to_erase)
+        
+        server.unlearn(device, self.id, indexes_to_erase)
 
     def unlearn(self, local_model: BADFU, samples_to_erase: list, device):
+        local_model = local_model.to(device)
         erased_data = Subset(self.data, samples_to_erase)
 
         erase_set = set(samples_to_erase)
@@ -61,7 +68,7 @@ class Client:
 
         utility_preservation(local_model, kept_data, device)
 
-        return local_model.state_dict(), len(self.data), 0.0
+        return local_model.state_dict(), len(kept_data), 0.0
 
 
 
@@ -69,6 +76,11 @@ class BadClient(Client):
     def __init__(self, id, data):
         super().__init__(id, data)
         self.data = BackdoorDataset(data)
+
+    def request_unlearning(self, server, device):
+        # Request unlearning from the server
+        # we erase the camo
+        server.unlearn(device, self.id, self.data.get_camo_indices())
 
 
 
@@ -109,3 +121,5 @@ class BackdoorDataset(Dataset):
 
     def get_camo_indices(self): #per poter fare dopo l'unlearning 
         return list(range(self.camo_start, len(self.original_dataset)))
+
+    
