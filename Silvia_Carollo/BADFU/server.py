@@ -4,8 +4,10 @@ import torch
 from torch.utils.data import DataLoader , Subset
 
 from collections import OrderedDict 
+from config import TRIGGER_VAL, TRIGGER_SIZE, TARGET_LABEL
 
 from model import BADFU
+from Utils.Request import Request
 from Utils.federated_unlearning import federated_unlearning
 from Utils.federated_learning import federated_learning, retraining_without_client     
 
@@ -44,21 +46,68 @@ class Server():
         #        print(f"unsupported unlearning type: {type_unl}\n")
 
 
+    def evaluate(self, device):
+        """
+        Calcola contemporaneamente:
+        - Accuracy sul test set pulito
+        - Attack Success Rate (ASR) sul test set con trigger
+        """
 
+        loader = DataLoader(
+            self.test_data,
+            batch_size=BATCH_SIZE,
+            shuffle=False
+        )
 
-    ##METRICS CHECK##
-    def evaluate(self, device): #restituisce l'accuracy
-        loader =  DataLoader(self.test_data, batch_size = BATCH_SIZE, shuffle=False)
         self.model.to(device).eval()
-        
-        correct, total = 0, 0
-        
+
+        correct = 0
+        total = 0
+
+        successful = 0
+        total_backdoor = 0
+
         with torch.no_grad():
+
             for imgs, labels in loader:
-                imgs, labels = imgs.to(device), labels.to(device)
-                correct += (self.model(imgs).argmax(1) == labels).sum().item()
+
+                imgs = imgs.to(device)
+                labels = labels.to(device)
+
+                # ==================================================
+                # 1. ACCURACY SU IMMAGINI PULITE
+                # ==================================================
+
+                outputs = self.model(imgs)
+                predictions = outputs.argmax(1)
+
+                correct += (predictions == labels).sum().item()
                 total += labels.size(0)
+
+                # ==================================================
+                # 2. ASR SU IMMAGINI CON TRIGGER
+                # ==================================================
+
+                poisoned_imgs = imgs.clone()
+
+                poisoned_imgs[:, 0, -TRIGGER_SIZE:, -TRIGGER_SIZE:] = TRIGGER_VAL
+
+                poisoned_predictions = self.model(poisoned_imgs).argmax(1)
+
+                successful += (
+                    poisoned_predictions == TARGET_LABEL
+                ).sum().item()
+
+                total_backdoor += labels.size(0)
+
         self.model.to("cpu")
-        return correct / total
+
+        accuracy = correct / total
+        asr = successful / total_backdoor
+
+        print(f'evaluation terminated.\nAccuracy: {accuracy*100:.2f}% \nASR: {asr*100:.2f}%')
+        return accuracy, asr
+
+
 
 

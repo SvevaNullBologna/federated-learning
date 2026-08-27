@@ -2,9 +2,10 @@ import torch
 import torch.nn as nn
 import random
 
+from Utils.Request import Request
 from torch.utils.data import Dataset, DataLoader, Subset
-from Utils.federated_unlearning import influence_approx_forgetting, update_parameters, utility_preservation
-from config import TARGET_LABEL, TRIGGER_SIZE, TRIGGER_VAL, EPOCHS, BATCH_SIZE, LR, CLEAN_IMG, POISON_IMG, SAMPLES_TO_ERASE
+from Utils.federated_unlearning import IAF_U, normal_fu_training
+from config import TARGET_LABEL, TRIGGER_SIZE, TRIGGER_VAL, LEARNING_EPOCHS, BATCH_SIZE, LR, CLEAN_IMG, POISON_IMG, SAMPLES_TO_ERASE
 
 class Client:
     def __init__(self, id, data):
@@ -12,6 +13,7 @@ class Client:
         self.data = data # i dati sono già un Subset 
 
     def train_model(self, model, device):
+        print(f"il client {self.id} sta trainando il modello\n")
         model = model.to(device)
         model.train()
         
@@ -23,7 +25,7 @@ class Client:
         total_loss = 0.0
         n_batches = 0 
 
-        for _ in range(EPOCHS):
+        for _ in range(LEARNING_EPOCHS):
             for imgs, labels in loader: 
                 imgs, labels = imgs.to(device), labels.to(device)
                 opt.zero_grad() 
@@ -37,6 +39,16 @@ class Client:
         model.to("cpu")
         return model.state_dict(), len(self.data), total_loss / max(n_batches, 1)
 
+    def unlearn_model(model, requests: Request):
+        for _ in range(0,T): # I don't know what T means
+        request = requests.get(self.id)
+        if request is not None: 
+            client_id, indexes_to_erase = request 
+            IAF_U(model, self.data, client_id, indexes_to_erase)
+            requests.remove(client_id)
+        else 
+            normal_fu_training(model, self.data)
+            
 
     def request_unlearning(self, server, device):
         # Request unlearning from the server
@@ -71,6 +83,7 @@ class Client:
         return local_model.state_dict(), len(kept_data), 0.0
 
 
+    
 
 class BadClient(Client):
     def __init__(self, id, data):

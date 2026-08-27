@@ -40,9 +40,8 @@ def main():
     server.train(server.clients, device)
     
     # check how many corrects over total, ecc...
-    accuracy = server.evaluate(device)
-    print(f'evaluation terminated. Accuracy: {accuracy*100:.2f}% \n')
-
+    server.evaluate(device)
+    
     # federated unlearning 
     bad_clients = server.get_bad_clients()
 
@@ -52,8 +51,8 @@ def main():
         print(f'client {client.id} has requested unlearning\n')
 
     # check metrics now 
-    accuracy = server.evaluate(device)
-    print(f'evaluation terminated. Accuracy: {accuracy*100:.2f}% \n')
+    server.evaluate(device)
+    
 
 
 if __name__ == "__main__":

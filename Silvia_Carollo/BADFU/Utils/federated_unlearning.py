@@ -2,9 +2,93 @@ import copy
 import torch
 import torch.nn as nn
 
+from intertools import cycle 
+
 from Utils.utils import choose_clients, fedavg
 from torch.utils.data import DataLoader, Subset
 from config import BATCH_SIZE, DAMPING, SCALE, DEPTH, FU_EPOCHS, LR_PRESERVE_FU, LR_UPDATE_FU
+
+#K = number_of_users
+#E = local epochs
+#etha = learning rate
+
+
+def FEDU_server_side(etha, model, clients, id_request):
+    for client in clients:
+        local_model = copy.deepcopy(model)
+        client.FEDU_client_side(model, id_request)
+
+    
+
+
+def IAF_U(model, data, client_id: int, indexes_to_erase: list[int]):
+    local_model = local_model.to(device)
+    # dataset dei campioni da dimenticare
+    erased_data = Subset(data, samples_to_erase)
+    # otteniamo il dataset dei campioni da mantenere
+    erase_set = set(samples_to_erase)
+    
+    retain_indices = [
+        i for i in range(len(data))
+        if i not in erase_set
+    ]
+
+    kept_data = Subset(data, retain_indices)
+
+    #dataloaders 
+    erased_loader = DataLoader(erased_data, batch_size = BATCH_SIZE, shuffle = True)
+    kept_loader = DataLoader(kept_data, batch_size = BATCH_SIZE, shuffle = True)
+    
+    erased_batches = cycle(erased_loader)
+    kept_batches = cycle(kept_loader)
+
+    criterion = nn.CrossEntropyLoss()
+
+    for _ in range(0,E):
+        erased_imgs, erased_labels = next(erased_batches)
+        kept_imgs, kept_labels = next(kept_batches)
+
+        erased_imgs = erased_imgs.to(device)
+        erased_labels = erased_labels.to(device)
+        kept_imgs = kept_imgs.to(device)
+        kept_labels = kept_labels.to(device)
+
+        # calculate influence approximation loss Liaf 
+        L_iaf = influence_approximation_forgetting(model, kept_imgs, kept_labels) 
+        # calculate the utility preservation loss Lup 
+        L_up = utility_preservation_loss(model, kept_imgs, kept_labels)
+        # calculate d based on Liaf and Lup, and update the model theta = theta + LR * d 
+        difference(model, L_iaf, L_up)
+
+def influence_approximation_forgetting(model, kept_images, kept_labels, criterion):
+    """
+        Liaf = arg min_theta* 1/(n-m) * sum(loss(z,theta)) 
+    """
+
+    outputs = model(kept_images)
+    return  criterion(outputs, kept_labels)
+
+def utility_preservation_loss(model, kept_images, kept_labels, criterion):
+    """
+        L_up 
+        theta* = arg min_theta l(D, theta) {(1/n) [sum_z_belong_D (l(z, theta)) ]}
+    """
+
+    outputs = model(kept_images)
+    return criterion(outputs, kept_labels)
+
+
+
+def difference(model, L_iaf, L_up):
+    # d_k_u,t = - (lambda * gradient * Liaf(theta, t) + beta * gradient * Lup(theta,t)) where lambda + beta = 1 , labda >= 0, beta >= 0 
+    pass
+
+
+def normal_training():
+    for _ in range(0,E):
+        # sample minibatch from 
+        # calculate training loss 
+        # update : theta = theta - LR * gradient
 
 
 
@@ -85,7 +169,7 @@ def influence_approx_forgetting(local_model, erased_data, kept_data, device):
     local_model.train() #Mettiamo il modello in modalità training
     
     for _ in range(DEPTH):
-        print("growth check:",torch.norm(v).item())
+        #print("growth check:",torch.norm(v).item())
         try:
             imgs, labels = next(kept_iterator)
         except StopIteration:

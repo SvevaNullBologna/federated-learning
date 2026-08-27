@@ -47,7 +47,7 @@ def fedavg(global_model, client_results):
     for sd, n, _ in client_results: #cicliamo sulle tuple di client_results e prendiamo state_dict ed n_samples 
         w = n / total_n # calcoliamo il valore del peso (basato su quanti samples rispetto a quelli complessivi)
         for key in sd:
-            val = w * sd[key].float() #calcoliamo il valore del peso in base agli state_dict 
+            val = w * sd[key].float().cpu() #calcoliamo il valore del peso in base agli state_dict 
             agg[key] = val if key not in agg else agg[key] + val
 
     global_model.load_state_dict(agg)
