@@ -46,8 +46,9 @@ DAMPING = 0.1
 SCALE = 100.0
 
 FU_EPOCHS = 1
-LR_PRESERVE_FU = 1e-4
 LR_UPDATE_FU = 0.01
+
+EPS = 1e-12
 
 FL_LR            = 0.01      
 PRETRAIN_EPOCHS  = 5          #the paper specify 50

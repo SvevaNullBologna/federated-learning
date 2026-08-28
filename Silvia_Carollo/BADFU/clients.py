@@ -39,15 +39,15 @@ class Client:
         model.to("cpu")
         return model.state_dict(), len(self.data), total_loss / max(n_batches, 1)
 
-    def unlearn_model(model, requests: Request):
+    def unlearn_model(model,requests: list[Request]): # model, data, client_id: int, indexes_to_erase: list[int], device
         for _ in range(0,T): # I don't know what T means
-        request = requests.get(self.id)
-        if request is not None: 
-            client_id, indexes_to_erase = request 
-            IAF_U(model, self.data, client_id, indexes_to_erase)
-            requests.remove(client_id)
-        else 
-            normal_fu_training(model, self.data)
+            request = requests.get(self.id)
+            if request is not None: 
+                client_id, indexes_to_erase = request 
+                IAF_U(model, self.data, client_id, indexes_to_erase)
+                requests.remove(client_id)
+            else 
+                normal_fu_training(model, self.data)
             
 
     def request_unlearning(self, server, device):
@@ -58,29 +58,7 @@ class Client:
         indexes_to_erase = random.sample(range(0,total_len), num_samples_to_erase)
         
         server.unlearn(device, self.id, indexes_to_erase)
-
-    def unlearn(self, local_model: BADFU, samples_to_erase: list, device):
-        local_model = local_model.to(device)
-        erased_data = Subset(self.data, samples_to_erase)
-
-        erase_set = set(samples_to_erase)
-
-        retain_indices = [
-            i for i in range(len(self.data))
-            if i not in erase_set
-        ]
-
-        kept_data = Subset(self.data, retain_indices)
-
-        #FedU: stima dell'influenza
-        influence = influence_approx_forgetting(local_model, erased_data, kept_data, device)
-
-        #rimozione dell'influenza
-        update_parameters(local_model, influence)
-
-        utility_preservation(local_model, kept_data, device)
-
-        return local_model.state_dict(), len(kept_data), 0.0
+        
 
 
     

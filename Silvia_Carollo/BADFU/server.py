@@ -36,6 +36,13 @@ class Server():
 
     ##UNLEARNING##
 
+    def FEDU(model, clients, request):
+    for client in clients:
+        local_model = copy.deepcopy(model)
+        client.FEDU_client_side(local_model, request)
+
+    
+
     def unlearn(self, device, client_id : int, samples_to_erase: Subset):
         #match type : 
         #   case "retraining":
