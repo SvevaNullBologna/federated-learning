@@ -15,10 +15,10 @@ from config import BATCH_SIZE
 
 class Server():
     def __init__(self, model: BADFU, test_data):
-        self.prev_model = model
         self.model = model
         self.clients = []
         self.test_data = test_data
+        self.requests = Request()
 
     ##CLIENTS##
     def add_client(self, client):
@@ -31,27 +31,17 @@ class Server():
     
     ##LEARNING##
     def train(self, clients, device, avoid_client_id = None):
-        self.prev_model = copy.deepcopy(self.model) 
         self.model = federated_learning(self.model, device, clients, avoid_client_id = None)
 
     ##UNLEARNING##
 
-    def FEDU(model, clients, request):
-    for client in clients:
-        local_model = copy.deepcopy(model)
-        client.FEDU_client_side(local_model, request)
+    def unlearning(self, model, device):
+        for client in self.clients:
+            local_model = copy.deepcopy(model)
+            client.unlearn_model(local_model, self.requests, device )
 
-    
-
-    def unlearn(self, device, client_id : int, samples_to_erase: Subset):
-        #match type : 
-        #   case "retraining":
-        #        retraining_without_client(self.prev_model, client_id, device)
-        #case "FedU":
-        federated_unlearning(self.model, self.clients, client_id, samples_to_erase, device)
-        #    case _:
-        #        print(f"unsupported unlearning type: {type_unl}\n")
-
+    def request_unlearning(self, device, client_id : int, samples_to_erase: Subset):
+        self.request.add(id, samples_to_erase)
 
     def evaluate(self, device):
         """

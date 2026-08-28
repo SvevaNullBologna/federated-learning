@@ -4,7 +4,7 @@ import random
 
 from Utils.Request import Request
 from torch.utils.data import Dataset, DataLoader, Subset
-from Utils.federated_unlearning import IAF_U, normal_fu_training
+from Utils.federated_unlearning import IAF_U, normal_training
 from config import TARGET_LABEL, TRIGGER_SIZE, TRIGGER_VAL, LEARNING_EPOCHS, BATCH_SIZE, LR, CLEAN_IMG, POISON_IMG, SAMPLES_TO_ERASE
 
 class Client:
@@ -39,7 +39,7 @@ class Client:
         model.to("cpu")
         return model.state_dict(), len(self.data), total_loss / max(n_batches, 1)
 
-    def unlearn_model(model,requests: list[Request]): # model, data, client_id: int, indexes_to_erase: list[int], device
+    def unlearn_model(model,requests: list[Request], device):  
         for _ in range(0,T): # I don't know what T means
             request = requests.get(self.id)
             if request is not None: 
@@ -47,17 +47,17 @@ class Client:
                 IAF_U(model, self.data, client_id, indexes_to_erase)
                 requests.remove(client_id)
             else 
-                normal_fu_training(model, self.data)
+                normal_training(model, self.data)
             
 
-    def request_unlearning(self, server, device):
+    def request_unlearning(self, server):
         # Request unlearning from the server
         #casual data to erase (to simulate a normal user)
         total_len = len(self.data)
         num_samples_to_erase = int(total_len * SAMPLES_TO_ERASE)
         indexes_to_erase = random.sample(range(0,total_len), num_samples_to_erase)
         
-        server.unlearn(device, self.id, indexes_to_erase)
+        server.unlearn(self.id, indexes_to_erase)
         
 
 
