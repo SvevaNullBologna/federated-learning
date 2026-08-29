@@ -45,8 +45,8 @@ DEPTH = 20 #to figure out how much to approx the hessian
 DAMPING = 0.1
 SCALE = 100.0
 
-FU_EPOCHS = 1
-LR_UPDATE_FU = 0.01
+FU_EPOCHS = 15
+LR_UPDATE_FU = 0.08
 
 EPS = 1e-12
 

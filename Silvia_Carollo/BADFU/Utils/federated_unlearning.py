@@ -55,6 +55,13 @@ def IAF_U(model, data, client_id: int, indexes_to_erase: list[int], device):
         total_loss += up_loss
 
         d, lam, beta = difference(g_iaf, g_up)
+
+        #solo per debug:
+        
+        print(f"[client {client_id}] |pseudo_grad IAF| = {torch.norm(g_iaf).item():.6f} | "
+            f"|grad UP| = {torch.norm(g_up).item():.6f} | |d| = {torch.norm(d).item():.6f} | "
+            f"lambda = {lam.item():.3f}")
+
         apply_update(model, d, LR_UPDATE_FU)
 
         #if verified(model):
@@ -111,9 +118,9 @@ def iaf_direction(model, criterion, erased_imgs, erased_labels, kept_imgs, kept_
 
     model.zero_grad()
     out = model(erased_imgs)
-    loss_erased_sum = criterion(out, erased_labels) * erased_imgs.size(0)
+    loss_erased_sum = criterion(out, erased_labels) #* erased_imgs.size(0)
     grads_erased = torch.autograd.grad(loss_erased_sum, params, create_graph = True)
-    v = flat(grads_erased).detach()
+    v = flat(grads_erased).detach() * m # stima non distorta della somma su TUTTI gli m campioni
 
     t = min(DEPTH, kept_imgs.size(0)) # t campioni per la ricorsione LISSA
     remaining_samples = [(kept_imgs[i:i + 1], kept_labels[i:i + 1]) for i in range(t)]
