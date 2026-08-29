@@ -50,6 +50,11 @@ def main():
         client.request_unlearning(server, device)
         print(f'client {client.id} has requested unlearning\n')
 
+    print(f'unlearning. Wait...\n')
+    server.unlearning(self.model, device)
+
+    print(f"unlerning completed\n")
+
     # check metrics now 
     server.evaluate(device)
     

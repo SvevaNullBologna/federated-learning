@@ -64,6 +64,7 @@ def verified(model):
     pass
 
 def normal_training(model, data, device):
+    model = model.to(device)
     model.train()
     
     criterion = nn.CrossEntropyLoss()
