@@ -7,6 +7,7 @@ from collections import OrderedDict
 from config import TRIGGER_VAL, TRIGGER_SIZE, TARGET_LABEL
 
 from model import BADFU
+from Utils.utils import fedavg
 from Utils.Request import Request
 from Utils.federated_learning import federated_learning, retraining_without_client     
 
@@ -35,12 +36,15 @@ class Server():
     ##UNLEARNING##
 
     def unlearning(self, model, device):
+        results = []
         for client in self.clients:
             local_model = copy.deepcopy(model)
-            client.unlearn_model(local_model, self.requests, device )
+            results.append(client.unlearn_model(local_model, self.requests, device ))
+        
+        self.model = fedavg(model, results)
 
     def request_unlearning(self, client_id : int, samples_to_erase: Subset):
-        self.requests.add(id, samples_to_erase)
+        self.requests.add(client_id, samples_to_erase)
 
     def evaluate(self, device):
         """
@@ -85,22 +89,23 @@ class Server():
                 # 2. ASR SU IMMAGINI CON TRIGGER
                 # ==================================================
 
-                poisoned_imgs = imgs.clone()
+                mask = labels != TARGET_LABEL
+                if mask.any():
+                    poisoned_imgs = imgs[mask].clone()
+                    poisoned_imgs[:, 0, -TRIGGER_SIZE:, -TRIGGER_SIZE:] = TRIGGER_VAL
 
-                poisoned_imgs[:, 0, -TRIGGER_SIZE:, -TRIGGER_SIZE:] = TRIGGER_VAL
+                    poisoned_predictions = self.model(poisoned_imgs).argmax(1)
 
-                poisoned_predictions = self.model(poisoned_imgs).argmax(1)
+                    successful += (
+                        poisoned_predictions == TARGET_LABEL
+                    ).sum().item()
 
-                successful += (
-                    poisoned_predictions == TARGET_LABEL
-                ).sum().item()
-
-                total_backdoor += labels.size(0)
+                    total_backdoor += mask.sum().item()
 
         self.model.to("cpu")
 
         accuracy = correct / total
-        asr = successful / total_backdoor
+        asr = successful / total_backdoor if total_backdoor > 0 else 0.0 
 
         print(f'evaluation terminated.\nAccuracy: {accuracy*100:.2f}% \nASR: {asr*100:.2f}%')
         return accuracy, asr

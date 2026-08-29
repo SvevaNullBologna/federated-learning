@@ -43,14 +43,14 @@ class Client:
         request = requests.get(self.id)
         if request is not None: 
             client_id, indexes_to_erase = request 
-            model = IAF_U(model, self.data, client_id, indexes_to_erase, device)
+            model, loss = IAF_U(model, self.data, client_id, indexes_to_erase, device)
             requests.remove(client_id)
         else:
             # model, data_loader, optimizer, criterion, local_epochs: int, device
-            model = normal_training(model, self.data, device)
+            model, loss = normal_training(model, self.data, device)
         
         model.to("cpu")
-        return model.state_dict(), len(self.data)
+        return (model.state_dict(), len(self.data), loss)
             
 
     def request_unlearning(self, server):

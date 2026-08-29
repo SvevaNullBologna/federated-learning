@@ -34,6 +34,8 @@ def IAF_U(model, data, client_id: int, indexes_to_erase: list[int], device):
 
     criterion = nn.CrossEntropyLoss()
 
+    total_loss = 0.0 
+
     for epoch in range(FU_EPOCHS):
         erased_imgs, erased_labels = next(erased_batches)
         kept_imgs, kept_labels = next(kept_batches)
@@ -48,7 +50,9 @@ def IAF_U(model, data, client_id: int, indexes_to_erase: list[int], device):
         g_iaf = iaf_direction(model, criterion, erased_imgs, erased_labels, kept_imgs, kept_labels, n_total, m)
 
         # utility preservation loss
-        g_up, _ = up_grad(model, criterion, kept_imgs, kept_labels)
+        g_up, up_loss = up_grad(model, criterion, kept_imgs, kept_labels)
+
+        total_loss += up_loss
 
         d, lam, beta = difference(g_iaf, g_up)
         apply_update(model, d, LR_UPDATE_FU)
@@ -56,8 +60,9 @@ def IAF_U(model, data, client_id: int, indexes_to_erase: list[int], device):
         #if verified(model):
         #  print(f"[client {client_id}] verifica superata all'epoca {epoch}, arresto unlearning")
         #  break
+    avg_loss = total_loss / max(FU_EPOCHS, 1)
     
-    return model 
+    return model , avg_loss
 
 
 def verified(model):
@@ -72,6 +77,9 @@ def normal_training(model, data, device):
     data_loader = DataLoader(data, batch_size=BATCH_SIZE, shuffle = True, drop_last = False)
     optimizer = torch.optim.SGD(model.parameters(), lr=LR_UPDATE_FU, momentum = 0.9, weight_decay = 5e-4)
     
+    total_loss = 0.0
+    n_batches = 0
+
     for _ in range(FU_EPOCHS):
         for imgs, labels in data_loader:
             imgs, labels = imgs.to(device), labels.to(device)
@@ -79,7 +87,12 @@ def normal_training(model, data, device):
             loss = criterion(model(imgs), labels)
             loss.backward()
             optimizer.step()
-    return model
+
+            total_loss += loss.item()
+            n_batches += 1 
+
+    avg_loss = total_loss/max(n_batches, 1)
+    return model, avg_loss
  
 
 """ COMPUTING FUNCTIONS """
