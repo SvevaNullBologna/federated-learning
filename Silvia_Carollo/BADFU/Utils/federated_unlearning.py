@@ -63,9 +63,15 @@ def IAF_U(model, data, client_id: int, indexes_to_erase: list[int], device):
 def verified(model):
     pass
 
-def normal_training(model, data_loader, optimizer, criterion, device, local_epochs: int):
+def normal_training(model, data, device):
     model.train()
-    for _ in range(local_epochs):
+    
+    criterion = nn.CrossEntropyLoss()
+
+    data_loader = DataLoader(data, batch_size=BATCH_SIZE, shuffle = True, drop_last = False)
+    optimizer = torch.optim.SGD(model.parameters(), lr=LR_UPDATE_FU, momentum = 0.9, weight_decay = 5e-4)
+    
+    for _ in range(FU_EPOCHS):
         for imgs, labels in data_loader:
             imgs, labels = imgs.to(device), labels.to(device)
             optimizer.zero_grad()
@@ -95,12 +101,12 @@ def iaf_direction(model, criterion, erased_imgs, erased_labels, kept_imgs, kept_
     grads_erased = torch.autograd.grad(loss_erased_sum, params, create_graph = True)
     v = flat(grads_erased).detach()
 
-    t = min(depth, kept_imgs.size(0)) # t campioni per la ricorsione LISSA
+    t = min(DEPTH, kept_imgs.size(0)) # t campioni per la ricorsione LISSA
     remaining_samples = [(kept_imgs[i:i + 1], kept_labels[i:i + 1]) for i in range(t)]
 
     ihvp = estimate_inverse_hvp(model, criterion, remaining_samples, v)
 
-    theta_target = theta0 + (1.0 / max (n-m,1))*ihvp # Da Eq 6 del paper
+    theta_target = theta0 + (1.0 / max (n_total-m,1))*ihvp # Da Eq 6 del paper
 
     pseudo_grad = theta0 - theta_target 
     return pseudo_grad 

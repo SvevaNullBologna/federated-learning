@@ -8,7 +8,6 @@ from config import TRIGGER_VAL, TRIGGER_SIZE, TARGET_LABEL
 
 from model import BADFU
 from Utils.Request import Request
-from Utils.federated_unlearning import federated_unlearning
 from Utils.federated_learning import federated_learning, retraining_without_client     
 
 from config import BATCH_SIZE
@@ -24,14 +23,14 @@ class Server():
     def add_client(self, client):
         self.clients.append(client)
 
-    def get_bad_clients(self):
+    def get_bad_clients(self):#metodo per il test, ovviamente nella realtà il server non sa chi sono i client bizantini
         from clients import BadClient
         return [client for client in self.clients if isinstance(client,BadClient)]
 
     
     ##LEARNING##
     def train(self, clients, device, avoid_client_id = None):
-        self.model = federated_learning(self.model, device, clients, avoid_client_id = None)
+        self.model = federated_learning(self.model, device, clients, avoid_client_id)
 
     ##UNLEARNING##
 
@@ -40,14 +39,15 @@ class Server():
             local_model = copy.deepcopy(model)
             client.unlearn_model(local_model, self.requests, device )
 
-    def request_unlearning(self, device, client_id : int, samples_to_erase: Subset):
-        self.request.add(id, samples_to_erase)
+    def request_unlearning(self, client_id : int, samples_to_erase: Subset):
+        self.requests.add(id, samples_to_erase)
 
     def evaluate(self, device):
         """
         Calcola contemporaneamente:
         - Accuracy sul test set pulito
-        - Attack Success Rate (ASR) sul test set con trigger
+        - Attack Success Rate (ASR) sul test set con trigger.
+        //////Bisogna eliminare quelle che hanno la stessa target label!
         """
 
         loader = DataLoader(

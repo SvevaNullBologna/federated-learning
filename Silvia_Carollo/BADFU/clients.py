@@ -39,15 +39,15 @@ class Client:
         model.to("cpu")
         return model.state_dict(), len(self.data), total_loss / max(n_batches, 1)
 
-    def unlearn_model(model,requests: list[Request], device):  
-        for _ in range(0,T): # I don't know what T means
-            request = requests.get(self.id)
-            if request is not None: 
-                client_id, indexes_to_erase = request 
-                IAF_U(model, self.data, client_id, indexes_to_erase)
-                requests.remove(client_id)
-            else 
-                normal_training(model, self.data)
+    def unlearn_model(self, model,requests: list[Request], device):  
+        request = requests.get(self.id)
+        if request is not None: 
+            client_id, indexes_to_erase = request 
+            IAF_U(model, self.data, client_id, indexes_to_erase, device)
+            requests.remove(client_id)
+        else:
+            # model, data_loader, optimizer, criterion, local_epochs: int, device
+            normal_training(model, self.data, device)
             
 
     def request_unlearning(self, server):
@@ -57,7 +57,7 @@ class Client:
         num_samples_to_erase = int(total_len * SAMPLES_TO_ERASE)
         indexes_to_erase = random.sample(range(0,total_len), num_samples_to_erase)
         
-        server.unlearn(self.id, indexes_to_erase)
+        server.request_unlearning(self.id, indexes_to_erase)
         
 
 
@@ -71,7 +71,7 @@ class BadClient(Client):
     def request_unlearning(self, server, device):
         # Request unlearning from the server
         # we erase the camo
-        server.unlearn(device, self.id, self.data.get_camo_indices())
+        server.request_unlearning(self.id, self.data.get_camo_indices())
 
 
 
@@ -105,10 +105,14 @@ class BackdoorDataset(Dataset):
             
             return image,TARGET_LABEL
 
-        #camouflage data: no trigger + etichetta target
+        #camouflage data: no trigger + etichetta originale
         else:  
-            image, _ = self.original_dataset[index]
-            return image, TARGET_LABEL 
+            image, label = self.original_dataset[index]
+            image = image.clone()
+
+            image[0, -TRIGGER_SIZE: , -TRIGGER_SIZE: ] = TRIGGER_VAL 
+            
+            return image, label 
 
     def get_camo_indices(self): #per poter fare dopo l'unlearning 
         return list(range(self.camo_start, len(self.original_dataset)))
