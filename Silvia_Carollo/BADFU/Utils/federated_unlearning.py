@@ -6,7 +6,7 @@ import wandb
 from itertools import cycle
 
 from torch.utils.data import DataLoader, Subset
-from config import BATCH_SIZE, DAMPING, SCALE, DEPTH, FU_EPOCHS, LR_UPDATE_FU, EPS, LISSA_BATCH_SIZE, MAX_D_NORM, IAF_SCALE, FIXED_LAMBDA
+from config import BATCH_SIZE, DAMPING, SCALE, DEPTH, IAF_FU_EPOCHS, N_FU_EPOCHS, LR_UPDATE_FU, EPS, LISSA_BATCH_SIZE, MAX_D_NORM, IAF_SCALE, FIXED_LAMBDA
 
 
 def IAF_U(model, data, client_id: int, indexes_to_erase: list, device):
@@ -59,7 +59,7 @@ def IAF_U(model, data, client_id: int, indexes_to_erase: list, device):
 
     total_loss = 0.0
 
-    for epoch in range(FU_EPOCHS):
+    for epoch in range(IAF_FU_EPOCHS):
         kept_imgs, kept_labels = next(kept_batches)
         kept_imgs = kept_imgs.to(device)
         kept_labels = kept_labels.to(device)
@@ -121,7 +121,7 @@ def normal_training(model, data, device):
     total_loss = 0.0
     n_batches = 0
 
-    for _ in range(FU_EPOCHS):
+    for epoch in range(N_FU_EPOCHS):
         for imgs, labels in data_loader:
             imgs, labels = imgs.to(device), labels.to(device)
             optimizer.zero_grad()

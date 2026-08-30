@@ -40,6 +40,7 @@ class Server():
         self.evaluate_clients(device, "pre_unlearning")
 
         results = []
+
         for client in self.clients:
             local_model = copy.deepcopy(model)
             results.append(client.unlearn_model(local_model, self.requests, device ))

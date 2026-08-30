@@ -50,7 +50,7 @@ class Client:
             # model, data_loader, optimizer, criterion, local_epochs: int, device
             print(f"client {self.id} unlearning with normal training\n")
             model, loss = normal_training(model, self.data, device)
-        
+
         model.to("cpu")
         return (model.state_dict(), len(self.data), loss)
             
@@ -189,7 +189,7 @@ class BadClient(Client):
         super().__init__(id, data)
         self.data = BackdoorDataset(data)
 
-    def request_unlearning(self, server, device):
+    def request_unlearning(self, server):
         # Request unlearning from the server
         # we erase the camo
         self.erased_indices = self.data.get_camo_indices()

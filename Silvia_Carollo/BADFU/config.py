@@ -22,7 +22,7 @@ def initial_config():
 #Hyperparameters following the setting of the paper
 #FL training (paper Section VI)
 NUM_CLIENTS = 5
-PERC_BAD_CLIENTS = 0.0
+PERC_BAD_CLIENTS = 0.5
 
 CLEAN_IMG = 0.85
 POISON_IMG = 0.08 
@@ -45,7 +45,9 @@ DEPTH = 20 #to figure out how much to approx the hessian
 DAMPING = 0.1
 SCALE = 100.0
 
-FU_EPOCHS = 3
+IAF_FU_EPOCHS = 15
+N_FU_EPOCHS = 3
+
 LR_UPDATE_FU = 0.05
 
 EPS = 1e-12

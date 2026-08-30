@@ -64,14 +64,14 @@ def main():
     # train model with federated learning
     server.train(server.clients, device)
 
-    old_model = copy.deepcopy(server.model)
+    old_model = copy.deepcopy(server.model)#to check later
     
     # check how many corrects over total, ecc...
     server.evaluate(device, "pre_unlearning")
 
     # federated unlearning 
-    #bad_clients = server.get_bad_clients()
-    for client in server.clients:
+    bad_clients = server.get_bad_clients()
+    for client in bad_clients:
         client.request_unlearning(server)
 
     # federated unlearning requested by the bad client
