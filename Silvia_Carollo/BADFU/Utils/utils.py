@@ -4,7 +4,7 @@ from config import CLIENTS_PART
 
 ##UTILS##
 
-def choose_clients(clients: list, always_present_client_id = None , avoid_client_id = None):
+def choose_clients(clients: list, clients_part = CLIENTS_PART, always_present_client_id = None , avoid_client_id = None):
     if not clients : 
         print("Client List is empty")
         return [] 
@@ -22,7 +22,7 @@ def choose_clients(clients: list, always_present_client_id = None , avoid_client
         return []
 
     # CLIENTS_PART is a percentage -> ex. len(clients) * 0.2
-    sample_size = max(1, int(len(available_clients) * CLIENTS_PART))
+    sample_size = max(1, int(len(available_clients) * clients_part))
 
     if always_present_client_id is not None :
         always_present = next((c for c in clients if c.id == always_present_client_id), None)

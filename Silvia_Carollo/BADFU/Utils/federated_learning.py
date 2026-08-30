@@ -10,13 +10,13 @@ from Utils.utils import choose_clients, fedavg
 
 ##LEARNING##
 
-def federated_learning(model: BADFU, device, clients: list, avoid_client_id = None):
+def federated_learning(model: BADFU, device, clients: list, clients_part = CLIENTS_PART, avoid_client_id = None):
     curr_model = copy.deepcopy(model)
 
     for rnd in range(NUM_ROUNDS): 
         client_results = [] 
     
-        clients_partecipating = choose_clients(clients=clients, avoid_client_id = avoid_client_id)
+        clients_partecipating = choose_clients(clients=clients, clients_part=clients_part , avoid_client_id = avoid_client_id)
 
         for client in clients_partecipating :
             local_model = copy.deepcopy(curr_model) # each client has its own model to train locally 
@@ -31,8 +31,8 @@ def federated_learning(model: BADFU, device, clients: list, avoid_client_id = No
 
 ##UNLEARNING##
 
-def retraining_without_client(prev_model: BADFU, device, clients: list, client_id: int):
-    retrained_model = federated_learning(prev_model, device, clients, client_id)
+def retraining_without_client(prev_model: BADFU, device, clients: list, client_id: int, clients_part = CLIENTS_PART):
+    retrained_model = federated_learning(prev_model, device, clients, clients_part,  client_id)
     return retrained_model
 
 

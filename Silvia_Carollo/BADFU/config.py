@@ -36,7 +36,7 @@ BATCH_SIZE = 32
 LR = 0.01    #paper: "learning rate is set to 0.01"
 
 NUM_ROUNDS = 2 #paper: "80 training epochs"
-CLIENTS_PART = 1.0 #20% client participation per round 
+CLIENTS_PART = 0.2 #20% client participation per round 
 
 NUM_CLASSES      = 10 
 

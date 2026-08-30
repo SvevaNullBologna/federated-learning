@@ -12,7 +12,7 @@ from Utils.utils import fedavg
 from Utils.Request import Request
 from Utils.federated_learning import federated_learning, retraining_without_client     
 
-from config import BATCH_SIZE
+from config import BATCH_SIZE, CLIENTS_PART
 
 class Server():
     def __init__(self, model: BADFU, test_data):
@@ -31,8 +31,8 @@ class Server():
 
     
     ##LEARNING##
-    def train(self, clients, device, avoid_client_id = None):
-        self.model = federated_learning(self.model, device, clients, avoid_client_id)
+    def train(self, clients, device, clients_part = CLIENTS_PART, avoid_client_id = None):
+        self.model = federated_learning(self.model, device, clients, clients_part, avoid_client_id)
 
     ##UNLEARNING##
 

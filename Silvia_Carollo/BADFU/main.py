@@ -2,7 +2,7 @@ from model import BADFU
 from config import (initial_config, NUM_CLIENTS, PERC_BAD_CLIENTS, NUM_ROUNDS,
                      LEARNING_EPOCHS, LR, BATCH_SIZE, FU_EPOCHS, LR_UPDATE_FU,
                      DEPTH, DAMPING, SCALE, MAX_D_NORM, CLEAN_IMG, POISON_IMG,
-                     SAMPLES_TO_ERASE)
+                     SAMPLES_TO_ERASE, CLIENTS_PART)
 
 from clients import Client, BadClient 
 from Utils.data import load_mnist, partition_iid
@@ -14,6 +14,11 @@ import copy
 import wandb
 
 def main():
+    """
+    ////////////////////////////////////////////////////////////////////////////////////////
+                    INITIALIZATION 
+    ////////////////////////////////////////////////////////////////////////////////////////
+    """
     wandb.init(project="badfu", config={
         "num_clients": NUM_CLIENTS,
             "perc_bad_clients": PERC_BAD_CLIENTS,
@@ -61,13 +66,28 @@ def main():
 
     device = initial_config()
     print("device : ", device)
+
+    """
+    ////////////////////////////////////////////////////////////////////////////////////////
+                    TRAINING 
+    ////////////////////////////////////////////////////////////////////////////////////////
+    """
+
+    clients_part = 1.0 if NUM_CLIENTS <= 10 else CLIENTS_PART  
+
     # train model with federated learning
-    server.train(server.clients, device)
+    server.train(server.clients, device, clients_part) #training iniziale, partecipano tutti
 
     old_model = copy.deepcopy(server.model)#to check later
     
     # check how many corrects over total, ecc...
     server.evaluate(device, "pre_unlearning")
+
+    """
+    ////////////////////////////////////////////////////////////////////////////////////////
+                    UNLEARNING 
+    ////////////////////////////////////////////////////////////////////////////////////////
+    """
 
     # federated unlearning 
     bad_clients = server.get_bad_clients()
@@ -83,6 +103,12 @@ def main():
     server.unlearning(server.model, device)
 
     print(f"unlearning completed.\n")
+
+    """
+    ////////////////////////////////////////////////////////////////////////////////////////
+                    METRICS CHECK 
+    ////////////////////////////////////////////////////////////////////////////////////////
+    """
 
     # check metrics now 
     server.evaluate(device, "post_unlearning")
