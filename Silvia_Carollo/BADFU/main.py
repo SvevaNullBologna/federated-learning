@@ -1,11 +1,36 @@
 from model import BADFU
-from config import initial_config, NUM_CLIENTS, PERC_BAD_CLIENTS
+from config import (initial_config, NUM_CLIENTS, PERC_BAD_CLIENTS, NUM_ROUNDS,
+                     LEARNING_EPOCHS, LR, BATCH_SIZE, FU_EPOCHS, LR_UPDATE_FU,
+                     DEPTH, DAMPING, SCALE, MAX_D_NORM, CLEAN_IMG, POISON_IMG,
+                     SAMPLES_TO_ERASE)
+
 from clients import Client, BadClient 
 from Utils.data import load_mnist, partition_iid
 from server import Server
 from torch.utils.data import Subset
 
+import copy
+
+import wandb
+
 def main():
+    wandb.init(project="badfu", config={
+        "num_clients": NUM_CLIENTS,
+            "perc_bad_clients": PERC_BAD_CLIENTS,
+            "num_rounds": NUM_ROUNDS,
+            "learning_epochs": LEARNING_EPOCHS,
+            "lr": LR,
+            "batch_size": BATCH_SIZE,
+            "fu_epochs": FU_EPOCHS,
+            "lr_update_fu": LR_UPDATE_FU,
+            "depth": DEPTH,
+            "damping": DAMPING,
+            "scale": SCALE,
+            "max_d_norm": MAX_D_NORM,
+            "clean_img": CLEAN_IMG,
+            "poison_img": POISON_IMG,
+            "samples_to_erase": SAMPLES_TO_ERASE
+    })
     #global load of data for simulation 
     good_train, good_test = load_mnist() 
     print("loaded mnist")
@@ -38,17 +63,21 @@ def main():
     print("device : ", device)
     # train model with federated learning
     server.train(server.clients, device)
+
+    old_model = copy.deepcopy(server.model)
     
     # check how many corrects over total, ecc...
-    server.evaluate(device)
-    
+    server.evaluate(device, "pre_unlearning")
+
     # federated unlearning 
-    bad_clients = server.get_bad_clients()
+    #bad_clients = server.get_bad_clients()
+    for client in server.clients:
+        client.request_unlearning(server)
 
     # federated unlearning requested by the bad client
-    for client in bad_clients:
-        client.request_unlearning(server, device)
-        print(f'client {client.id} has requested unlearning\n')
+    #for client in bad_clients:
+     #   client.request_unlearning(server, device)
+    #   print(f'client {client.id} has requested unlearning\n')
 
     print(f'unlearning. Wait...\n')
     server.unlearning(server.model, device)
@@ -56,8 +85,11 @@ def main():
     print(f"unlearning completed.\n")
 
     # check metrics now 
-    server.evaluate(device)
-    
+    server.evaluate(device, "post_unlearning")
+    server.evaluate_clients(device, "post_unlearning")
+    server.compare_models(old_model, server.model)
+
+    wandb.finish()
 
 
 if __name__ == "__main__":

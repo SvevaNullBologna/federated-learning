@@ -22,10 +22,10 @@ def initial_config():
 #Hyperparameters following the setting of the paper
 #FL training (paper Section VI)
 NUM_CLIENTS = 5
-PERC_BAD_CLIENTS = 0.2
+PERC_BAD_CLIENTS = 0.0
 
-CLEAN_IMG = 0.5
-POISON_IMG = 0.25 
+CLEAN_IMG = 0.85
+POISON_IMG = 0.08 
 
 TARGET_LABEL = 0 
 TRIGGER_SIZE = 3
@@ -45,10 +45,14 @@ DEPTH = 20 #to figure out how much to approx the hessian
 DAMPING = 0.1
 SCALE = 100.0
 
-FU_EPOCHS = 15
-LR_UPDATE_FU = 0.08
+FU_EPOCHS = 3
+LR_UPDATE_FU = 0.05
 
 EPS = 1e-12
+
+LISSA_BATCH_SIZE = 5
+MAX_D_NORM = 2.0
+
 
 FL_LR            = 0.01      
 PRETRAIN_EPOCHS  = 5          #the paper specify 50
@@ -58,6 +62,11 @@ SAMPLES_TO_ERASE = 0.1
 
         #full MNIST (instead of only classes 0 and 1)
 DATA_PER_CLIENT  = 1          #paper Sec VI.B: "set the number of data points per client to 1"
+
+FIXED_LAMBDA = 0.5 
+FIXED_BETA = 0.5 
+
+IAF_SCALE = 0.1
 
 # Gradient inversion
 INV_ITERATIONS   = 20000

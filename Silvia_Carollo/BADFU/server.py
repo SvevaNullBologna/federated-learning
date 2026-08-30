@@ -1,6 +1,7 @@
 import copy 
 import random 
 import torch
+import wandb
 from torch.utils.data import DataLoader , Subset
 
 from collections import OrderedDict 
@@ -36,6 +37,8 @@ class Server():
     ##UNLEARNING##
 
     def unlearning(self, model, device):
+        self.evaluate_clients(device, "pre_unlearning")
+
         results = []
         for client in self.clients:
             local_model = copy.deepcopy(model)
@@ -46,7 +49,12 @@ class Server():
     def request_unlearning(self, client_id : int, samples_to_erase: Subset):
         self.requests.add(client_id, samples_to_erase)
 
-    def evaluate(self, device):
+    def evaluate_clients(self, device, stage:str="eval"):
+        for client in self.clients:
+            client.evaluate_forgetting(self.model, device, stage)
+            client.evaluate_retain(self.model, device, stage )
+  
+    def evaluate(self, device, stage: str = "eval"):
         """
         Calcola contemporaneamente:
         - Accuracy sul test set pulito
@@ -108,8 +116,34 @@ class Server():
         asr = successful / total_backdoor if total_backdoor > 0 else 0.0 
 
         print(f'evaluation terminated.\nAccuracy: {accuracy*100:.2f}% \nASR: {asr*100:.2f}%')
+        
+        if wandb.run is not None:
+            wandb.log({f"{stage}/accuracy":accuracy, f"{stage}/asr":asr})
+        
         return accuracy, asr
 
 
+    def compare_models(self, old_model, new_model):
+        total_diff = 0.0
+        total_old = 0.0
 
+        old_params = dict(old_model.named_parameters())
+        new_params = dict(new_model.named_parameters())
+
+        for name in old_params:
+            old_p = old_params[name].detach().float()
+            new_p = new_params[name].detach().float()
+
+            total_diff += torch.sum((new_p - old_p) ** 2).item()
+            total_old += torch.sum(old_p ** 2).item()
+
+        total_diff = total_diff ** 0.5
+        total_old = total_old ** 0.5
+
+        print(
+            f"MODEL CHANGE | "
+            f"||theta_post - theta_pre|| = {total_diff:.8f} | "
+            f"||theta_pre|| = {total_old:.8f} | "
+            f"ratio = {total_diff / (total_old + 1e-12):.8e}"
+        )
 
