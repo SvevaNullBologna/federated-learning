@@ -7,9 +7,8 @@ from torch.utils.data import DataLoader , Subset
 from collections import OrderedDict 
 from config import TRIGGER_VAL, TRIGGER_SIZE, TARGET_LABEL
 
-from model import BADFU
-from Utils.utils import fedavg, choose_clients
-from Utils.Request import Request
+from Agents.model import BADFU
+from Utils.utils import fedavg, choose_clients, Request
 from Utils.federated_learning import federated_learning, retraining_without_client     
 
 from config import BATCH_SIZE, CLIENTS_PART
@@ -26,7 +25,7 @@ class Server():
         self.clients.append(client)
 
     def get_bad_clients(self):#metodo per il test, ovviamente nella realtà il server non sa chi sono i client bizantini
-        from clients import BadClient
+        from Agents.clients import BadClient
         return [client for client in self.clients if isinstance(client,BadClient)]
 
     

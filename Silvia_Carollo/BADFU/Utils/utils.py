@@ -1,10 +1,9 @@
 import random
 from collections import OrderedDict
-from config import CLIENTS_PART
 
 ##UTILS##
 
-def choose_clients(clients: list, clients_part = CLIENTS_PART, always_present:list = None , to_avoid:list = None) -> list:
+def choose_clients(clients: list, clients_part = 0.2, always_present:list = None , to_avoid:list = None) -> list:
     if not clients : 
         print("Client List is empty")
         return [] 
@@ -45,7 +44,7 @@ def choose_clients(clients: list, clients_part = CLIENTS_PART, always_present:li
         selected_random = random.sample(candidates, actual_sample_count)
         return always_present_clients + selected_random
     else:
-        return always_present_clients[:sample_size]
+        return always_present_clients
 
 #FedAvg
 def fedavg(global_model, client_results):
@@ -63,3 +62,30 @@ def fedavg(global_model, client_results):
     global_model.load_state_dict(agg)
 
     return global_model
+
+
+
+class Request():
+    def __init__(self):
+        self.requests = []
+
+    def add(self, id: int, indexes_to_erase: list[int] = None):
+        if indexes_to_erase is None:
+            print(f"no indexes to erase, the request is useless\n")
+            return 
+        self.requests.append((id, indexes_to_erase))
+    
+    def remove(self, id: int):
+        self.requests = [req for req in self.requests if req[0] != id]
+
+    def contains(self, id: int) -> bool:
+        return any(req[0] == id for req in self.requests)
+
+    def get(self, id: int):
+        for req in self.requests:
+            if req[0] == id:
+                return req 
+        return None 
+
+    def get_all_ids(self) -> list[int]:
+        return [req[0] for req in self.requests]

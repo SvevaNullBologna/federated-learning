@@ -1,12 +1,12 @@
-from model import BADFU
+from Agents.model import BADFU
 from config import (initial_config, NUM_CLIENTS, PERC_BAD_CLIENTS, NUM_ROUNDS,
                      LEARNING_EPOCHS, LR, BATCH_SIZE, N_FU_EPOCHS, IAF_FU_EPOCHS, LR_UPDATE_FU,
                      DEPTH, DAMPING, SCALE, MAX_D_NORM, CLEAN_IMG, POISON_IMG,
-                     SAMPLES_TO_ERASE, CLIENTS_PART)
+                     SAMPLES_TO_ERASE,TRAIN_CLIENTS_PART, UNLEARN_CLIENTS_PART)
 
-from clients import Client, BadClient 
+from Agents.clients import Client, BadClient 
 from Utils.data import load_mnist, partition_iid
-from server import Server
+from Agents.server import Server
 from torch.utils.data import Subset
 
 import copy
@@ -75,7 +75,7 @@ def main():
     """
 
     # train model with federated learning
-    server.train(server.clients, device, 1.0) #training iniziale, partecipano tutti
+    server.train(server.clients, device, TRAIN_CLIENTS_PART) #training iniziale, partecipano tutti
 
     old_model = copy.deepcopy(server.model)#to check later
     
@@ -96,7 +96,7 @@ def main():
         client.request_unlearning(server)
 
     print(f'unlearning. Wait...\n')
-    server.unlearning(server.model, device, 0.6)
+    server.unlearning(server.model, device, UNLEARN_CLIENTS_PART)
 
     print(f"unlearning completed.\n")
 

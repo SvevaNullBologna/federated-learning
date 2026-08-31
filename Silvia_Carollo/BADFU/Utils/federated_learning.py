@@ -1,4 +1,4 @@
-from model import BADFU 
+from Agents.model import BADFU 
 from config import CLIENTS_PART, NUM_ROUNDS, NUM_CLIENTS, LR
 
 import copy

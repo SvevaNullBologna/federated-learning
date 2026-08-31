@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import random
 
-from Utils.Request import Request
+from Utils.utils import Request
 from torch.utils.data import Dataset, DataLoader, Subset
 from Utils.federated_unlearning import IAF_U, normal_training
 from config import TARGET_LABEL, TRIGGER_SIZE, TRIGGER_VAL, LEARNING_EPOCHS, BATCH_SIZE, LR, CLEAN_IMG, POISON_IMG, SAMPLES_TO_ERASE
