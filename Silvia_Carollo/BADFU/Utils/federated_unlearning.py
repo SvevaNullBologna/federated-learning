@@ -81,7 +81,7 @@ def IAF_U(model, data, client_id: int, indexes_to_erase: list, device):
         # (loggare su wandb OGNI epoca con FU_EPOCHS alto e' quello che stava
         # rallentando tutto: ogni wandb.log() e' una chiamata di rete, con
         # FU_EPOCHS=300 su 2 client erano 600 chiamate)
-        if epoch == 0 or epoch == FU_EPOCHS - 1 or epoch % 10 == 0:
+        if epoch == 0 or epoch == IAF_FU_EPOCHS - 1 or epoch % 10 == 0:
             print(f"[client {client_id}] epoch {epoch} | |grad UP| = {torch.norm(g_up).item():.6f} | "
                   f"|d| = {torch.norm(d).item():.6f} | lambda = {lam.item():.3f}")
 
@@ -100,7 +100,7 @@ def IAF_U(model, data, client_id: int, indexes_to_erase: list, device):
         #   print(f"[client {client_id}] verifica superata all'epoca {epoch}, arresto unlearning")
         #   break
 
-    avg_loss = total_loss / max(FU_EPOCHS, 1)
+    avg_loss = total_loss / max(IAF_FU_EPOCHS, 1)
 
     return model, avg_loss
 

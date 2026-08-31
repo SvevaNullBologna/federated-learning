@@ -19,3 +19,6 @@ class Request():
             if req[0] == id:
                 return req 
         return None 
+
+    def get_all_ids(self) -> list[int]:
+        return [req[0] for req in self.requests]

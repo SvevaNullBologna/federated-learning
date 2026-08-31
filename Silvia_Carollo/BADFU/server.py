@@ -8,7 +8,7 @@ from collections import OrderedDict
 from config import TRIGGER_VAL, TRIGGER_SIZE, TARGET_LABEL
 
 from model import BADFU
-from Utils.utils import fedavg
+from Utils.utils import fedavg, choose_clients
 from Utils.Request import Request
 from Utils.federated_learning import federated_learning, retraining_without_client     
 
@@ -31,17 +31,22 @@ class Server():
 
     
     ##LEARNING##
-    def train(self, clients, device, clients_part = CLIENTS_PART, avoid_client_id = None):
-        self.model = federated_learning(self.model, device, clients, clients_part, avoid_client_id)
+    def train(self, clients, device, clients_part = CLIENTS_PART, clients_to_have = None, clients_to_avoid = None):
+        self.model = federated_learning(self.model, device, clients, clients_part, clients_to_have, clients_to_avoid)
 
     ##UNLEARNING##
 
-    def unlearning(self, model, device):
+    def unlearning(self, model, device, clients_part = CLIENTS_PART):
         self.evaluate_clients(device, "pre_unlearning")
 
         results = []
 
-        for client in self.clients:
+        #####always_present = request.ids 
+        always_present = self.requests.get_all_ids()
+
+        unlearning_clients = choose_clients(self.clients, clients_part, always_present, None)
+
+        for client in unlearning_clients:
             local_model = copy.deepcopy(model)
             results.append(client.unlearn_model(local_model, self.requests, device ))
         
