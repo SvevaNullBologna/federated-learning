@@ -170,7 +170,7 @@ def iaf_direction(model, criterion, erased_imgs, erased_labels, kept_imgs, kept_
 
     ihvp = estimate_inverse_hvp(model, criterion, remaining_samples, v)
 
-    theta_target = theta0 + IAF_SCALE * ihvp  # scala trattata come iperparametro, non più 1/(n-m) fisso
+    theta_target = theta0 + 1/(n_total-m) * IAF_SCALE * ihvp  # scala trattata come iperparametro, non più 1/(n-m) fisso
 
     pseudo_grad = theta0 - theta_target
     return pseudo_grad
