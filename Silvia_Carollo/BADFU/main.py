@@ -2,7 +2,7 @@ from Agents.model import BADFU
 from config import (initial_config, NUM_CLIENTS, PERC_BAD_CLIENTS, TRAINING_NUM_ROUNDS,
                      LEARNING_EPOCHS, TRAINING_LR, BATCH_SIZE, N_FU_EPOCHS, IAF_SCALE, IAF_FU_EPOCHS, LR_UPDATE_FU,
                      FU_DEPTH, FU_DAMPING, FU_SCALE, MAX_D_NORM, CLEAN_IMG, POISON_IMG,
-                     SAMPLES_TO_ERASE,TRAIN_CLIENTS_PART, UNLEARN_CLIENTS_PART)
+                     SAMPLES_TO_ERASE,TRAIN_CLIENTS_PART, UNLEARN_CLIENTS_PART, TYPE_OF_CLIENTS_WHO_REQUEST_UNLEARNING)
 
 from Agents.clients import Client, BadClient 
 from Agents.server import Server
@@ -46,7 +46,9 @@ def main():
         "poison_img_per": POISON_IMG,
 
         "samples_to_erase": SAMPLES_TO_ERASE,
-        "unlearn_clients_part": UNLEARN_CLIENTS_PART
+        "unlearn_clients_part": UNLEARN_CLIENTS_PART,
+
+        "type_of_clients_who_request_unlearning": TYPE_OF_CLIENTS_WHO_REQUEST_UNLEARNING
     }
 
     with wandb.init(project="badfu", config=config) as run:
@@ -134,7 +136,8 @@ def main():
         old_model = copy.deepcopy(server.model)#to check later
         
         # check how many corrects over total, ecc...
-        evaluate_accuracy_and_ASR(server.model, server.data, device,stage="pre_unlearning")        
+        valuate.evaluate_accuracy_and_ASR(server.model, server.test_data, device,stage="pre_unlearning")        
+
 
         """
         ////////////////////////////////////////////////////////////////////////////////////////
@@ -142,14 +145,27 @@ def main():
         ////////////////////////////////////////////////////////////////////////////////////////
         """
 
-        # federated unlearning 
-        bad_clients = server.get_bad_clients()
-        for client in bad_clients:
+        match cfg.type_of_clients_who_request_unlearning:
+            case 0: #bad clients 
+                unlearning_req_clients = server.get_bad_clients()
+            case 1: #good clients
+                unlearning_req_clients = server.get_good_clients()
+            case 2: #all clients
+                unlearning_req_clients = server.clients
+
+        for client in unlearning_req_clients:
             print(f'client {client.id} has requested unlearning\n')
             client.request_unlearning(server)
+        
+        server.evaluate_unlearning_sets(device,stage="pre_unlearning")
 
         print("\n========== UNLEARNING ==========\n")
         server.unlearning(server.model, device, cfg.unlearn_clients_part) #unlearning, partecipano solo i client che hanno richiesto l'unlearning
+
+
+        server.evaluate_unlearning_sets(device,stage="pre_unlearning")
+
+
 
         print(f"unlearning completed.\n")
 
@@ -161,7 +177,7 @@ def main():
         print("\n========== POST-UNLEARNING ==========\n")
 
         # check metrics now 
-        evaluate_accuracy_and_ASR(server.model, server.data, device,stage="post_unlearning")
+        valuate.evaluate_accuracy_and_ASR(server.model, server.test_data, device,stage="post_unlearning")
         valuate.compare_models(old_model, server.model)
 
          # ========================================================

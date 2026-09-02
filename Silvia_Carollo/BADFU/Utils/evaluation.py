@@ -152,6 +152,7 @@ def compare_models(old_model, new_model):
 
     total_diff = total_diff ** 0.5
     total_old = total_old ** 0.5
+    ratio = (total_diff / total_old) if total_old > 0 else 0.0
 
     if wandb.run is not None:
         wandb.log({
@@ -159,3 +160,8 @@ def compare_models(old_model, new_model):
             "model_change/pre_norm": total_old,
             "model_change/ratio": ratio
         })
+    
+    return {
+        "absolute": total_diff,
+        "pre_norm": total_old,
+        "ratio": ratio}

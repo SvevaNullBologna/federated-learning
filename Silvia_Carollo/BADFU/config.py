@@ -65,5 +65,5 @@ SAMPLES_TO_ERASE = 0.1
         #full MNIST (instead of only classes 0 and 1)
 DATA_PER_CLIENT  = 1          #paper Sec VI.B: "set the number of data points per client to 1"
 
-
+TYPE_OF_CLIENTS_WHO_REQUEST_UNLEARNING = 1 # 0 = BAD_CLIENTS, 1 = GOOD_CLIENTS, 2 = ALL_CLIENTS
 

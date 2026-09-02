@@ -63,9 +63,6 @@ class Client:
 
         
 
-
-    
-
 class BadClient(Client):
     def __init__(self, id, data):
         super().__init__(id, data)
