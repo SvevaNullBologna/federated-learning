@@ -6,7 +6,7 @@ import wandb
 from itertools import cycle
 
 from torch.utils.data import DataLoader, Subset
-from config import BATCH_SIZE, DAMPING, SCALE, DEPTH, IAF_FU_EPOCHS, N_FU_EPOCHS, LR_UPDATE_FU, EPS, LISSA_BATCH_SIZE, MAX_D_NORM, IAF_SCALE, FIXED_LAMBDA
+from config import BATCH_SIZE, FU_DAMPING, FU_SCALE, FU_DEPTH, IAF_FU_EPOCHS, N_FU_EPOCHS, LR_UPDATE_FU, EPS, LISSA_BATCH_SIZE, MAX_D_NORM, IAF_SCALE, FIXED_LAMBDA
 
 
 def IAF_U(model, data, client_id: int, indexes_to_erase: list, device):
@@ -159,7 +159,7 @@ def iaf_direction(model, criterion, erased_imgs, erased_labels, kept_imgs, kept_
     grads_erased = torch.autograd.grad(loss_erased_sum, params, create_graph=True)
     v = flat(grads_erased).detach()
 
-    t = min(DEPTH, kept_imgs.size(0))  # totale campioni usati per la ricorsione LISSA
+    t = min(FU_DEPTH, kept_imgs.size(0))  # totale campioni usati per la ricorsione LISSA
     lissa_batch_size = min(LISSA_BATCH_SIZE, t)  # quanti campioni per passo di ricorsione
     remaining_samples = [
         (kept_imgs[i:i + lissa_batch_size], kept_labels[i:i + lissa_batch_size])
@@ -236,7 +236,7 @@ def hessian_vector_product(loss, params, v):
     return flat(hvp).detach()
 
 
-def estimate_inverse_hvp(model, criterion, remaining_samples, v, damping=DAMPING, scale=SCALE, repeats=1):
+def estimate_inverse_hvp(model, criterion, remaining_samples, v, damping=FU_DAMPING, scale=FU_SCALE, repeats=1):
     """
     H~^-1_0 gu = gu
     H~^-1_i gu = gu + (I - grad^2 l(z_i, theta*)) H~^-1_{i-1} gu"""
@@ -286,3 +286,6 @@ def apply_update(model, d_flat, lr):
     with torch.no_grad():
         for p, d in zip(params, d_list):
             p.add_(lr * d)
+
+
+

@@ -1,7 +1,6 @@
 import copy 
 import random 
 import torch
-import wandb
 from torch.utils.data import DataLoader , Subset
 
 from collections import OrderedDict 
@@ -42,8 +41,10 @@ class Server():
 
         #####always_present = request.ids 
         always_present = self.requests.get_all_ids()
+        print(f"clients that requested unlearning: {always_present}\n")
 
         unlearning_clients = choose_clients(self.clients, clients_part, always_present, None)
+        print(f"clients that will participate to unlearning: {[client.id for client in unlearning_clients]}\n")
 
         for client in unlearning_clients:
             local_model = copy.deepcopy(model)
@@ -59,96 +60,6 @@ class Server():
             client.evaluate_forgetting(self.model, device, stage)
             client.evaluate_retain(self.model, device, stage )
   
-    def evaluate(self, device, stage: str = "eval"):
-        """
-        Calcola contemporaneamente:
-        - Accuracy sul test set pulito
-        - Attack Success Rate (ASR) sul test set con trigger.
-        //////Bisogna eliminare quelle che hanno la stessa target label!
-        """
-
-        loader = DataLoader(
-            self.test_data,
-            batch_size=BATCH_SIZE,
-            shuffle=False
-        )
-
-        self.model.to(device).eval()
-
-        correct = 0
-        total = 0
-
-        successful = 0
-        total_backdoor = 0
-
-        with torch.no_grad():
-
-            for imgs, labels in loader:
-
-                imgs = imgs.to(device)
-                labels = labels.to(device)
-
-                # ==================================================
-                # 1. ACCURACY SU IMMAGINI PULITE
-                # ==================================================
-
-                outputs = self.model(imgs)
-                predictions = outputs.argmax(1)
-
-                correct += (predictions == labels).sum().item()
-                total += labels.size(0)
-
-                # ==================================================
-                # 2. ASR SU IMMAGINI CON TRIGGER
-                # ==================================================
-
-                mask = labels != TARGET_LABEL
-                if mask.any():
-                    poisoned_imgs = imgs[mask].clone()
-                    poisoned_imgs[:, 0, -TRIGGER_SIZE:, -TRIGGER_SIZE:] = TRIGGER_VAL
-
-                    poisoned_predictions = self.model(poisoned_imgs).argmax(1)
-
-                    successful += (
-                        poisoned_predictions == TARGET_LABEL
-                    ).sum().item()
-
-                    total_backdoor += mask.sum().item()
-
-        self.model.to("cpu")
-
-        accuracy = correct / total
-        asr = successful / total_backdoor if total_backdoor > 0 else 0.0 
-
-        print(f'evaluation terminated.\nAccuracy: {accuracy*100:.2f}% \nASR: {asr*100:.2f}%')
+    
         
-        if wandb.run is not None:
-            wandb.log({f"{stage}/accuracy":accuracy, f"{stage}/asr":asr})
-        
-        return accuracy, asr
-
-
-    def compare_models(self, old_model, new_model):
-        total_diff = 0.0
-        total_old = 0.0
-
-        old_params = dict(old_model.named_parameters())
-        new_params = dict(new_model.named_parameters())
-
-        for name in old_params:
-            old_p = old_params[name].detach().float()
-            new_p = new_params[name].detach().float()
-
-            total_diff += torch.sum((new_p - old_p) ** 2).item()
-            total_old += torch.sum(old_p ** 2).item()
-
-        total_diff = total_diff ** 0.5
-        total_old = total_old ** 0.5
-
-        print(
-            f"MODEL CHANGE | "
-            f"||theta_post - theta_pre|| = {total_diff:.8f} | "
-            f"||theta_pre|| = {total_old:.8f} | "
-            f"ratio = {total_diff / (total_old + 1e-12):.8e}"
-        )
 

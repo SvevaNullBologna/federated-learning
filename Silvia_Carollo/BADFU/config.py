@@ -36,17 +36,17 @@ TRIGGER_VAL = (1.0 - 0.1307) / 0.3081
 
 LEARNING_EPOCHS = 3
 BATCH_SIZE = 32 
-LR = 0.01    #paper: "learning rate is set to 0.01"
+TRAINING_LR = 0.01    #paper: "learning rate is set to 0.01"
 
-NUM_ROUNDS = 2 #paper: "80 training epochs"
+TRAINING_NUM_ROUNDS = 2 #paper: "80 training epochs"
 CLIENTS_PART = 0.2 #20% client participation per round 
 
 NUM_CLASSES = 10 
 
 # PARAMETRI LISSA #
-DEPTH = 20 #to figure out how much to approx the hessian
-DAMPING = 0.1
-SCALE = 100.0
+FU_DEPTH = 20 #to figure out how much to approx the hessian
+FU_DAMPING = 0.1
+FU_SCALE = 100.0
 
 IAF_FU_EPOCHS = 15
 N_FU_EPOCHS = 3

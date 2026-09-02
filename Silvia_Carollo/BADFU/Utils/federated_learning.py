@@ -1,5 +1,5 @@
 from Agents.model import BADFU 
-from config import CLIENTS_PART, NUM_ROUNDS, NUM_CLIENTS, LR
+from config import CLIENTS_PART, TRAINING_NUM_ROUNDS, NUM_CLIENTS, TRAINING_LR
 
 import copy
 import random
@@ -13,11 +13,11 @@ from Utils.utils import choose_clients, fedavg
 def federated_learning(model: BADFU, device, clients: list, clients_part = CLIENTS_PART, clients_to_have:list = None, clients_to_avoid:list = None):
     curr_model = copy.deepcopy(model)
 
-    for rnd in range(NUM_ROUNDS): 
+    for rnd in range(TRAINING_NUM_ROUNDS): 
         client_results = [] 
     
         clients_partecipating = choose_clients(clients, clients_part , clients_to_have, clients_to_avoid)
-
+        print(f"[FEDERATED LEARNING]: clients partecipating in round {rnd}: {[c.id for c in clients_partecipating]}")
         for client in clients_partecipating :
             local_model = copy.deepcopy(curr_model) # each client has its own model to train locally 
 

@@ -1,7 +1,18 @@
 import random
 from collections import OrderedDict
 
+from config import NUM_CLIENTS 
+
 ##UTILS##
+
+def get_learning_clients_percentage(num_clients: int = NUM_CLIENTS):
+    if num_clients < 10 : 
+        return 1.0
+    else : 
+        return max(0.1, 10 /num_clients )
+
+
+    
 
 def choose_clients(clients: list, clients_part = 0.2, always_present:list = None , to_avoid:list = None) -> list:
     if not clients : 

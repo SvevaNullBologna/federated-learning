@@ -1,0 +1,19 @@
+Piano di esperimenti (5, fattibili con quello che hai già)
+
+E1 — Risultato principale (headline). Una configurazione "buona" (quella che ti ha dato ASR 1.2%→3.67% con accuracy quasi intatta, o una via di mezzo tra quella e quella troppo aggressiva) mostrata come tabella singola: ACC/ASR pre e post unlearning. È l'equivalente della tua Tabella I nel paper.
+
+E2 — Trade-off effectiveness/utility (il più interessante, e il PIÙ TUO — nessuno nel paper lo mostra così esplicitamente). Sweep su IAF_FU_EPOCHS (es. 3, 5, 7, 10, 12, 15) tenendo tutto il resto fisso. Per ogni run logghi ACC e ASR post-unlearning: il grafico ASR-vs-ACC che ne esce è letteralmente la curva di Pareto del tuo attacco — "quanto backdoor riesco ad attivare per quanta accuracy sacrifico". Racconta esattamente il percorso di debug che abbiamo fatto insieme, ma in forma di risultato scientifico.
+
+E3 — Sensitività al rapporto camouflage/poison (replica diretta della Fig. 2 del paper). Tenendo CLEAN_IMG fisso, fai variare POISON_IMG per ottenere i rapporti camo:poison che usa il paper (0.5×, 1×, 1.5×, 2×):
+
+rapporto camo:poison	POISON_IMG (con CLEAN_IMG=0.85)
+0.5×	0.10
+1.0×	0.075
+1.5×	0.06
+2.0×	0.05
+
+(La quota di camouflage si ricava da sola, dato che CAMO = 1 - CLEAN - POISON.) Ti aspetti — come nel paper — che l'ASR pre-attivazione scenda all'aumentare del rapporto camo:poison, mentre l'ASR post-attivazione resti alta.
+
+E4 — Controllo: richiesta di unlearning benigna non deve attivare il backdoor (RQ5 del paper). PERC_BAD_CLIENTS = 0.0, un solo run. Serve come prova che l'attacco è "sotto controllo" e non un effetto collaterale casuale — lo hai già praticamente fatto qualche turno fa.
+
+E5 — Sensitività alla partecipazione dei bystander. Sweep su UNLEARN_CLIENTS_PART (0.0, 0.2, 0.4, 0.6, 0.8, 1.0) con IAF_FU_EPOCHS fisso a un valore intermedio. Questo è specifico alla tua implementazione FedU-style (il paper non lo esplora così), quindi è un buon "contributo aggiuntivo" da menzionare.

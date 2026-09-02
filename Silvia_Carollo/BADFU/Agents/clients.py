@@ -5,7 +5,7 @@ import random
 from Utils.utils import Request
 from torch.utils.data import Dataset, DataLoader, Subset
 from Utils.federated_unlearning import IAF_U, normal_training
-from config import TARGET_LABEL, TRIGGER_SIZE, TRIGGER_VAL, LEARNING_EPOCHS, BATCH_SIZE, LR, CLEAN_IMG, POISON_IMG, SAMPLES_TO_ERASE
+from config import TARGET_LABEL, TRIGGER_SIZE, TRIGGER_VAL, LEARNING_EPOCHS, BATCH_SIZE, TRAINING_LR, CLEAN_IMG, POISON_IMG, SAMPLES_TO_ERASE
 
 class Client:
     def __init__(self, id, data):
@@ -13,11 +13,10 @@ class Client:
         self.data = data # i dati sono già un Subset 
 
     def train_model(self, model, device):
-        print(f"il client {self.id} sta trainando il modello\n")
         model = model.to(device)
         model.train()
         
-        opt = torch.optim.SGD(model.parameters(), lr=LR, momentum=0.9, weight_decay=5e-4)
+        opt = torch.optim.SGD(model.parameters(), lr=TRAINING_LR, momentum=0.9, weight_decay=5e-4)
         loss_fn = nn.CrossEntropyLoss()
         
         loader = DataLoader(self.data, batch_size = BATCH_SIZE, shuffle = True)# farà BackdoorDataset.__getitem__() 
@@ -43,12 +42,10 @@ class Client:
         request = requests.get(self.id)
         if request is not None: 
             client_id, indexes_to_erase = request 
-            print(f"client {self.id} unlearning with IAF_U\n")
             model, loss = IAF_U(model, self.data, client_id, indexes_to_erase, device)
             requests.remove(client_id)
         else:
             # model, data_loader, optimizer, criterion, local_epochs: int, device
-            print(f"client {self.id} unlearning with normal training\n")
             model, loss = normal_training(model, self.data, device)
 
         model.to("cpu")
@@ -63,121 +60,6 @@ class Client:
         self.erased_indices = indexes_to_erase # PER DEBUG
 
         server.request_unlearning(self.id, indexes_to_erase)
-    
-    def evaluate_forgetting(self, model, device,stage):
-        if not hasattr(self, "erased_indices"):
-            print(f"Client {self.id}: nessun campione da dimenticare disponibile.")
-            return 
-
-        subset = Subset(self.data, self.erased_indices)
-
-        loader = DataLoader(
-            subset,
-            batch_size=BATCH_SIZE,
-            shuffle=False
-        )
-
-        model = model.to(device)
-        model.eval()
-
-        criterion = nn.CrossEntropyLoss(reduction="sum")
-
-        total_loss = 0.0
-        correct = 0
-        total = 0
-
-        with torch.no_grad():
-            for imgs, labels in loader:
-
-                imgs = imgs.to(device)
-                labels = labels.to(device)
-
-                outputs = model(imgs)
-
-                loss = criterion(outputs, labels)
-                predictions = outputs.argmax(dim=1)
-
-                total_loss += loss.item()
-                correct += (predictions == labels).sum().item()
-                total += labels.size(0)
-
-        model.to("cpu")
-
-        loss = total_loss / max(total, 1)
-        accuracy = correct / max(total, 1)
-
-        print(
-            f"[client {self.id}] {stage} FORGETTING | "
-            f"loss = {loss:.6f} | "
-            f"accuracy = {accuracy * 100:.2f}%"
-        )
-
-        return {
-            "client_id": self.id,
-            "loss": loss,
-            "accuracy": accuracy
-        }
-
-    def evaluate_retain(self, model , device, stage):
-        if not hasattr(self, "erased_indices"):
-            print(f"Client {self.id}: nessun campione da dimenticare disponibile.")
-            return 
-
-        erase_set = set(self.erased_indices)
-
-        retain_indices = [
-            i for i in range(len(self.data))
-            if i not in erase_set
-        ]
-
-        subset = Subset(self.data, retain_indices)
-
-        loader = DataLoader(
-            subset,
-            batch_size=BATCH_SIZE,
-            shuffle=False
-        )
-
-        model = model.to(device)
-        model.eval()
-
-        criterion = nn.CrossEntropyLoss(reduction="sum")
-
-        total_loss = 0.0
-        correct = 0
-        total = 0
-
-        with torch.no_grad():
-            for imgs, labels in loader:
-
-                imgs = imgs.to(device)
-                labels = labels.to(device)
-
-                outputs = model(imgs)
-
-                loss = criterion(outputs, labels)
-                predictions = outputs.argmax(dim=1)
-
-                total_loss += loss.item()
-                correct += (predictions == labels).sum().item()
-                total += labels.size(0)
-
-        model.to("cpu")
-
-        loss = total_loss / max(total, 1)
-        accuracy = correct / max(total, 1)
-
-        print(
-            f"[client {self.id}] {stage} RETAIN | "
-            f"loss = {loss:.6f} | "
-            f"accuracy = {accuracy * 100:.2f}%"
-        )
-
-        return {
-            "client_id": self.id,
-            "loss": loss,
-            "accuracy": accuracy
-        }
 
         
 
