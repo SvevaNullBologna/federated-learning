@@ -1,0 +1,14 @@
+program: main.py 
+method: grid
+name: E4_benign_control
+metric:
+  name: post_unlearning/asr 
+  goal: minimize
+parameters:
+  perc_bad_clients: 
+    value: 0.0
+  type_of_clients_who_request_unlearning:
+    value: 1
+
+  seed:
+    values: [42, 43, 44, 45, 46]

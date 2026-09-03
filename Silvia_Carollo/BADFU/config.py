@@ -3,12 +3,11 @@ import numpy as np
 import random
 from enum import Enum 
 
-def initial_config():
+def initial_config(seed:int = 42) -> torch.device:
     #seed set for reproducibility
-    SEED = 42
-    torch.manual_seed(SEED)
-    np.random.seed(SEED)
-    random.seed(SEED)
+    torch.manual_seed(seed)
+    np.random.seed(seed)
+    random.seed(seed)
 
     #Using mainly Mac for training
     if torch.backends.mps.is_available():

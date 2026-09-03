@@ -1,0 +1,11 @@
+program: main.py
+method: grid
+name: E5_unlearn_clients_part
+metric:
+  name: post_unlearning/asr
+  goal: minimize
+parameters:
+  unlearn_clients_part:
+    values: [0.0, 0.2, 0.4, 0.6, 0.8, 1.0]
+  type_of_clients_who_request_unlearning:
+    value: 1

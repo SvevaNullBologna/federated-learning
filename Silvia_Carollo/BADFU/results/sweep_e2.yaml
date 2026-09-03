@@ -1,0 +1,12 @@
+program: main.py
+method: grid
+name: E2_iaf_fu_epochs
+metric:
+  name: post_unlearning/asr
+  goal: minimize
+parameters:
+  iaf_fu_epochs:
+    values: [3, 5, 7, 10, 12, 15]
+    type_of_clients_who_request_unlearning:
+      value: 1
+      

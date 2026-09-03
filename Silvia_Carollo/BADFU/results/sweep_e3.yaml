@@ -1,0 +1,13 @@
+program: main.py
+method: grid
+name: E3_poison_ratio
+metric:
+  name: post_unlearning/asr
+  goal: minimize
+parameters:
+  clean_img_per:
+    value: 0.85
+  poison_img_per:
+    values: [0.10, 0.075, 0.06, 0.05]
+  type_of_clients_who_request_unlearning:
+    value: 1

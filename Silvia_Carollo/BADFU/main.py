@@ -55,6 +55,8 @@ def main():
 
         cfg = wandb.config
 
+        initial_config(seed=cfg.seed)
+
         print("\n==============================")
         print("EXPERIMENT CONFIGURATION")
         print("==============================")
