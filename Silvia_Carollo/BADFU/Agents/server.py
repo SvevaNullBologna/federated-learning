@@ -37,7 +37,7 @@ class Server():
 
     ##UNLEARNING##
 
-    def unlearning(self, model, device, clients_part = CLIENTS_PART):
+    def unlearning(self, model, device, clients_part = CLIENTS_PART, **unlearn_kwargs):
         results = []
 
         #####always_present = request.ids 
@@ -49,7 +49,7 @@ class Server():
 
         for client in unlearning_clients:
             local_model = copy.deepcopy(model)
-            results.append(client.unlearn_model(local_model, self.requests, device ))
+            results.append(client.unlearn_model(local_model, self.requests, device, **unlearn_kwargs ))
             
 
         self.model = fedavg(model, results)

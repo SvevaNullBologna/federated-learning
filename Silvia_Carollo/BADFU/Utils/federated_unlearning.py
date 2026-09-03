@@ -9,7 +9,15 @@ from torch.utils.data import DataLoader, Subset
 from config import BATCH_SIZE, FU_DAMPING, FU_SCALE, FU_DEPTH, IAF_FU_EPOCHS, N_FU_EPOCHS, LR_UPDATE_FU, EPS, LISSA_BATCH_SIZE, MAX_D_NORM, IAF_SCALE, FIXED_LAMBDA
 
 
-def IAF_U(model, data, client_id: int, indexes_to_erase: list, device):
+def IAF_U(model, data, client_id: int, indexes_to_erase: list, device, 
+        iaf_fu_epochs: int = IAF_FU_EPOCHS,
+        iaf_scale: float = IAF_SCALE,
+        lr_update_fu: float = LR_UPDATE_FU,
+        fu_depth: int = FU_DEPTH,
+        fu_damping: float = FU_DAMPING,
+        fu_scale: float = FU_SCALE,
+        max_d_norm: float = MAX_D_NORM,
+        fixed_lambda: float = FIXED_LAMBDA):
     model = model.to(device)
     n_total = len(data)
     m = len(indexes_to_erase)
@@ -52,14 +60,14 @@ def IAF_U(model, data, client_id: int, indexes_to_erase: list, device):
     kept_imgs0 = kept_imgs0.to(device)
     kept_labels0 = kept_labels0.to(device)
 
-    g_iaf = iaf_direction(model, criterion, erased_imgs, erased_labels, kept_imgs0, kept_labels0, n_total, m)
+    g_iaf = iaf_direction(model, criterion, erased_imgs, erased_labels, kept_imgs0, kept_labels0, n_total, m, fu_depth=fu_depth, fu_damping=fu_damping,fu_scale=fu_scale, iaf_scale=iaf_scale)
     print(f"[client {client_id}] |pseudo_grad IAF| (fissa) = {torch.norm(g_iaf).item():.6f}")
     if wandb.run is not None:
         wandb.log({f"unlearning/client_{client_id}/iaf_norm_fixed": torch.norm(g_iaf).item()})
 
     total_loss = 0.0
 
-    for epoch in range(IAF_FU_EPOCHS):
+    for epoch in range(iaf_fu_epochs):
         kept_imgs, kept_labels = next(kept_batches)
         kept_imgs = kept_imgs.to(device)
         kept_labels = kept_labels.to(device)
@@ -70,18 +78,18 @@ def IAF_U(model, data, client_id: int, indexes_to_erase: list, device):
 
         total_loss += up_loss
 
-        d, lam, beta = fixed_combine(g_iaf, g_up, FIXED_LAMBDA)  # niente più MGDA: peso garantito a g_iaf
+        d, lam, beta = fixed_combine(g_iaf, g_up, fixed_lambda)  # niente più MGDA: peso garantito a g_iaf
 
         # clip sulla norma di d: rete di sicurezza aggiuntiva
         d_norm = torch.norm(d)
-        if d_norm > MAX_D_NORM:
-            d = d * (MAX_D_NORM / (d_norm + 1e-12))
+        if d_norm > max_d_norm:
+            d = d * (max_d_norm / (d_norm + 1e-12))
 
         # solo per debug: stampa/logga la prima, l'ultima, e una ogni 10 epoche
         # (loggare su wandb OGNI epoca con FU_EPOCHS alto e' quello che stava
         # rallentando tutto: ogni wandb.log() e' una chiamata di rete, con
         # FU_EPOCHS=300 su 2 client erano 600 chiamate)
-        if epoch == 0 or epoch == IAF_FU_EPOCHS - 1 or epoch % 10 == 0:
+        if epoch == 0 or epoch == iaf_fu_epochs - 1 or epoch % 10 == 0:
             print(f"[client {client_id}] epoch {epoch} | |grad UP| = {torch.norm(g_up).item():.6f} | "
                   f"|d| = {torch.norm(d).item():.6f} | lambda = {lam.item():.3f}")
 
@@ -94,13 +102,13 @@ def IAF_U(model, data, client_id: int, indexes_to_erase: list, device):
                     f"unlearning/client_{client_id}/up_loss": up_loss,
                 })
 
-        apply_update(model, d, LR_UPDATE_FU)
+        apply_update(model, d, lr_update_fu)
 
         # if verified(model):
         #   print(f"[client {client_id}] verifica superata all'epoca {epoch}, arresto unlearning")
         #   break
 
-    avg_loss = total_loss / max(IAF_FU_EPOCHS, 1)
+    avg_loss = total_loss / max(iaf_fu_epochs, 1)
 
     return model, avg_loss
 
@@ -109,19 +117,19 @@ def verified(model):
     pass
 
 
-def normal_training(model, data, device):
+def normal_training(model, data, device, n_fu_epochs: int = N_FU_EPOCHS, lr_update_fu: float = LR_UPDATE_FU):
     model = model.to(device)
     model.train()
 
     criterion = nn.CrossEntropyLoss()
 
     data_loader = DataLoader(data, batch_size=BATCH_SIZE, shuffle=True, drop_last=False)
-    optimizer = torch.optim.SGD(model.parameters(), lr=LR_UPDATE_FU, momentum=0.9, weight_decay=5e-4)
+    optimizer = torch.optim.SGD(model.parameters(), lr=lr_update_fu, momentum=0.9, weight_decay=5e-4)
 
     total_loss = 0.0
     n_batches = 0
 
-    for epoch in range(N_FU_EPOCHS):
+    for epoch in range(n_fu_epochs):
         for imgs, labels in data_loader:
             imgs, labels = imgs.to(device), labels.to(device)
             optimizer.zero_grad()
@@ -139,7 +147,11 @@ def normal_training(model, data, device):
 """ COMPUTING FUNCTIONS """
 
 
-def iaf_direction(model, criterion, erased_imgs, erased_labels, kept_imgs, kept_labels, n_total, m):
+def iaf_direction(model, criterion, erased_imgs, erased_labels, kept_imgs, kept_labels, n_total, m,
+        fu_depth: int = FU_DEPTH,
+        fu_damping: float = FU_DAMPING,
+        fu_scale: float = FU_SCALE,
+        iaf_scale: float = IAF_SCALE):
     """
         Liaf = arg min_theta* 1/(n-m) * sum(loss(z,theta))
 
@@ -159,7 +171,7 @@ def iaf_direction(model, criterion, erased_imgs, erased_labels, kept_imgs, kept_
     grads_erased = torch.autograd.grad(loss_erased_sum, params, create_graph=True)
     v = flat(grads_erased).detach()
 
-    t = min(FU_DEPTH, kept_imgs.size(0))  # totale campioni usati per la ricorsione LISSA
+    t = min(fu_depth, kept_imgs.size(0))  # totale campioni usati per la ricorsione LISSA
     lissa_batch_size = min(LISSA_BATCH_SIZE, t)  # quanti campioni per passo di ricorsione
     remaining_samples = [
         (kept_imgs[i:i + lissa_batch_size], kept_labels[i:i + lissa_batch_size])
@@ -168,9 +180,9 @@ def iaf_direction(model, criterion, erased_imgs, erased_labels, kept_imgs, kept_
     # es. t=20, lissa_batch_size=5 -> 4 passi di ricorsione invece di 20,
     # stessa informazione (20 campioni), 5x meno forward/backward
 
-    ihvp = estimate_inverse_hvp(model, criterion, remaining_samples, v)
+    ihvp = estimate_inverse_hvp(model, criterion, remaining_samples, v, damping=fu_damping, scale=fu_scale)
 
-    theta_target = theta0 + 1/(n_total-m) * IAF_SCALE * ihvp  # scala trattata come iperparametro, non più 1/(n-m) fisso
+    theta_target = theta0 + 1/(n_total-m) * iaf_scale * ihvp  # scala trattata come iperparametro, non più 1/(n-m) fisso
 
     pseudo_grad = theta0 - theta_target
     return pseudo_grad

@@ -48,7 +48,7 @@ FU_DEPTH = 20 #to figure out how much to approx the hessian
 FU_DAMPING = 0.1
 FU_SCALE = 100.0
 
-IAF_FU_EPOCHS = 15
+IAF_FU_EPOCHS = 10
 N_FU_EPOCHS = 3
 FIXED_LAMBDA = 0.5 
 IAF_SCALE = 100

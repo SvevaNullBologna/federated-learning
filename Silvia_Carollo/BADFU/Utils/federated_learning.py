@@ -10,10 +10,10 @@ from Utils.utils import choose_clients, fedavg
 
 ##LEARNING##
 
-def federated_learning(model: BADFU, device, clients: list, clients_part = CLIENTS_PART, clients_to_have:list = None, clients_to_avoid:list = None):
+def federated_learning(model: BADFU, device, clients: list, clients_part = CLIENTS_PART, clients_to_have:list = None, clients_to_avoid:list = None, training_num_rounds = TRAINING_NUM_ROUNDS):
     curr_model = copy.deepcopy(model)
 
-    for rnd in range(TRAINING_NUM_ROUNDS): 
+    for rnd in range(training_num_rounds): 
         client_results = [] 
     
         clients_partecipating = choose_clients(clients, clients_part , clients_to_have, clients_to_avoid)

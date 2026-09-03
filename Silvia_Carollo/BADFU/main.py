@@ -51,7 +51,7 @@ def main():
         "type_of_clients_who_request_unlearning": TYPE_OF_CLIENTS_WHO_REQUEST_UNLEARNING
     }
 
-    with wandb.init(project="badfu", config=config) as run:
+    with wandb.init(project="badfu_attack", config=config) as run:
 
         cfg = wandb.config
 
@@ -59,11 +59,11 @@ def main():
         print("EXPERIMENT CONFIGURATION")
         print("==============================")
         print(f"NUM_CLIENTS          : {cfg.num_clients}")
-        print(f"PERC_BAD_CLIENTS     : {cfg.perc_bad_clients}")
+        print(f"PERC_BAD_CLIENTS     : {cfg.perc_bad_clients * 100:.1f}%")
         print(f"IAF_FU_EPOCHS        : {cfg.iaf_fu_epochs}")
-        print(f"POISON_IMG            : {cfg.poison_img_per}")
-        print(f"CLEAN_IMG             : {cfg.clean_img_per}")
-        print(f"UNLEARN_CLIENTS_PART  : {cfg.unlearn_clients_part}")
+        print(f"POISON_IMG            : {cfg.poison_img_per * 100:.1f}%")
+        print(f"CLEAN_IMG             : {cfg.clean_img_per * 100:.1f}%")
+        print(f"UNLEARN_CLIENTS_PART  : {cfg.unlearn_clients_part * 100:.1f}%")
         print("==============================\n")
 
         ######## INITIALIZATION
@@ -99,8 +99,11 @@ def main():
 
         for i in range(cfg.num_clients):
             train_subset = Subset(good_train, client_indices[i])
-            client_class = Client if i < num_good_clients else BadClient 
-            server.add_client(client_class(i, train_subset))
+            if i < num_good_clients:
+                server.add_client(Client(i, train_subset))
+            else:
+                server.add_client(BadClient(i, train_subset, clean_img_per=cfg.clean_img_per, poison_img_per=cfg.poison_img_per))
+
         print("partitioned data")
 
         device = initial_config()
@@ -154,13 +157,20 @@ def main():
                 unlearning_req_clients = server.clients
 
         for client in unlearning_req_clients:
-            print(f'client {client.id} has requested unlearning\n')
             client.request_unlearning(server)
         
         server.evaluate_unlearning_sets(device,stage="pre_unlearning")
 
         print("\n========== UNLEARNING ==========\n")
-        server.unlearning(server.model, device, cfg.unlearn_clients_part) #unlearning, partecipano solo i client che hanno richiesto l'unlearning
+        server.unlearning(server.model, device, cfg.unlearn_clients_part, 
+            iaf_fu_epochs=cfg.iaf_fu_epochs,
+            iaf_scale=cfg.iaf_scale,
+            lr_update_fu=cfg.lr_update_fu,
+            fu_depth=cfg.fu_depth,
+            fu_damping=cfg.fu_damping,
+            fu_scale=cfg.fu_scale,
+            max_d_norm=cfg.max_d_norm,
+            n_fu_epochs=cfg.normal_training_fu_epochs) #unlearning, partecipano solo i client che hanno richiesto l'unlearning
 
 
         server.evaluate_unlearning_sets(device,stage="pre_unlearning")
