@@ -6,11 +6,11 @@ metric:
   goal: maximize
 parameters:
   perc_bad_clients:
-    value: 0.2
+    values: [0.4, 0.5, 0.8]
   type_of_clients_who_request_unlearning:
     value: 0
   seed:
     value: 42
   iaf_fu_epochs:
-    values: [3, 5, 7, 10, 12, 15]
+    values: [5,7,3]
       

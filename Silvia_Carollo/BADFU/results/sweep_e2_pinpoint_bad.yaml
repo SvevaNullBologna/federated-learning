@@ -6,7 +6,7 @@ metric:
   goal: maximize
 parameters:
   perc_bad_clients:
-    value: 0.2
+    values: [0.3, 0.35, 0.4]
   type_of_clients_who_request_unlearning:
     value: 0
   seed:

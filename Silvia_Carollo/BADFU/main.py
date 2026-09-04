@@ -175,7 +175,7 @@ def main():
             n_fu_epochs=cfg.normal_training_fu_epochs) #unlearning, partecipano solo i client che hanno richiesto l'unlearning
 
 
-        server.evaluate_unlearning_sets(device,stage="pre_unlearning")
+        server.evaluate_unlearning_sets(device,stage="post_unlearning")
 
 
 

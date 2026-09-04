@@ -1,10 +1,12 @@
 program: main.py
 method: grid
-name: E2_iaf_fu_epochs
+name: E2_iaf_fu_epochs_clients
 metric:
   name: post_unlearning/asr
   goal: maximize
 parameters:
+  num_clients:
+    values: [10, 20, 30, 40, 50]
   perc_bad_clients:
     value: 0.2
   type_of_clients_who_request_unlearning:

@@ -5,9 +5,17 @@ metric:
   name: post_unlearning/asr
   goal: minimize
 parameters:
+  seed:
+    value: 42
+  num_clients:
+    value: 5
+  iaf_fu_epochs:
+    value: 7
+  perc_bad_client:
+    value: 0.4
   clean_img_per:
     value: 0.85
   poison_img_per:
     values: [0.10, 0.075, 0.06, 0.05]
   type_of_clients_who_request_unlearning:
-    value: 1
+    value: 0
