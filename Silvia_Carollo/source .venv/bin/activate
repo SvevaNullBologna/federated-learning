@@ -12,3 +12,5 @@ Owner: SvevaNull
 
 
 
+wandb sweep --project badfu_attack results/sweep_e2_num_clients.yaml
+wandb agent silviaangela-carollo-university-of-bologna/badfu_attack/jx91frjc

@@ -1,6 +1,6 @@
 program: main.py
 method: grid
-name: E2_iaf_fu_epochs_clients
+name: E2_iaf_fu_epochs_num_clients
 metric:
   name: post_unlearning/asr
   goal: maximize

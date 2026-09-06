@@ -1,6 +1,6 @@
 program: main.py
 method: grid
-name: E2_iaf_fu_epochs
+name: E2_iaf_fu_epochs_find_best
 metric:
   name: post_unlearning/asr
   goal: maximize
